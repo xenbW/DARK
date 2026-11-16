@@ -1,0 +1,161 @@
+name: DARK Android alpha
+
+on:
+  push:
+    branches: [feat/dark-base-theme]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Prerelease tag, for example v0.2.0-alpha
+        required: true
+        default: v0.1.0-alpha
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dark-android-${{ inputs.tag || 'v0.1.0-alpha' }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.repository == 'xenbW/DARK' && github.ref == 'refs/heads/feat/dark-base-theme'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      tag: ${{ steps.metadata.outputs.tag }}
+      version: ${{ steps.metadata.outputs.version }}
+      version_code: ${{ steps.metadata.outputs.version_code }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Resolve DARK version
+        id: metadata
+        env:
+          DARK_TAG: ${{ inputs.tag || 'v0.1.0-alpha' }}
+        run: |
+          python3 .github/scripts/dark_android_release.py metadata \
+            --tag "$DARK_TAG" --run-number "$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+          python3 -m unittest discover -s .github/tests -p test_dark_android_release.py
+
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Restore original DARK signing key
+        env:
+          DARK_DEBUG_KEYSTORE_BASE64: ${{ secrets.DARK_DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          python3 - <<'PY'
+          import base64, os
+          from pathlib import Path
+          value = os.environ.get("DARK_DEBUG_KEYSTORE_BASE64", "").strip()
+          if not value:
+              raise SystemExit("::error::Set repository Actions secret DARK_DEBUG_KEYSTORE_BASE64 to the original DARK debug keystore. No new signing key will be generated.")
+          target = Path.home() / ".android/debug.keystore"
+          target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+          target.write_bytes(base64.b64decode(value, validate=True))
+          target.chmod(0o600)
+          PY
+          python3 .github/scripts/dark_android_release.py verify-keystore "$HOME/.android/debug.keystore"
+
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android toolchains
+        run: |
+          sdkmanager 'platforms;android-37.1' 'build-tools;36.0.0' \
+            'ndk;30.0.16248370' 'cmake;4.1.2'
+
+      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
+        with:
+          cache-disabled: true
+
+      - name: Build DARK APK
+        env:
+          DARK_VERSION: ${{ steps.metadata.outputs.version }}
+          DARK_VERSION_CODE: ${{ steps.metadata.outputs.version_code }}
+        run: |
+          ./gradlew :androidApp:assembleDebug :androidApp:ktlintCheck \
+            --no-daemon --no-scan --no-configuration-cache --max-workers=2 \
+            "-PappVersion=$DARK_VERSION" "-PdarkVersionCode=$DARK_VERSION_CODE"
+          ./gradlew :androidApp:testDebugUnitTest \
+            --tests com.metrolist.android.ui.theme.DarkColorSchemeTest \
+            --tests com.metrolist.android.playback.PlaybackServiceStartTest \
+            --no-daemon --no-scan --no-configuration-cache --max-workers=2 \
+            "-PappVersion=$DARK_VERSION" "-PdarkVersionCode=$DARK_VERSION_CODE"
+
+      - name: Verify APK and collect distribution files
+        env:
+          DARK_TAG: ${{ steps.metadata.outputs.tag }}
+        run: |
+          python3 .github/scripts/dark_android_release.py package \
+            --apk androidApp/build/outputs/apk/debug/androidApp-debug.apk \
+            --sdk "$ANDROID_HOME" --tag "$DARK_TAG" --run-number "$GITHUB_RUN_NUMBER" \
+            --commit "$GITHUB_SHA" \
+            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dark-android
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Remove runner signing key
+        if: always()
+        run: rm -f "$HOME/.android/debug.keystore"
+
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: dark-android
+          path: dist
+
+      - name: Publish prerelease APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DARK_TAG: ${{ needs.build.outputs.tag }}
+          DARK_VERSION_CODE: ${{ needs.build.outputs.version_code }}
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum -c "DARK-$DARK_TAG.apk.sha256"
+          if gh release view "$DARK_TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            test "$(gh release view "$DARK_TAG" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq .isPrerelease)" = true
+            gh release edit "$DARK_TAG" --repo "$GITHUB_REPOSITORY" --draft --prerelease --latest=false
+          else
+            gh release create "$DARK_TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "DARK $DARK_TAG" --draft --prerelease --latest=false
+          fi
+          gh release upload "$DARK_TAG" ./* --repo "$GITHUB_REPOSITORY" --clobber
+          gh release download "$DARK_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern "DARK-$DARK_TAG.apk" --dir ../download-verification
+          cmp "DARK-$DARK_TAG.apk" "../download-verification/DARK-$DARK_TAG.apk"
+          cat > ../release-notes.md <<EOF
+          DARK $DARK_TAG para Android 7.0 o posterior. APK de pruebas con paquete io.github.xenbw.dark.debug y versionCode $DARK_VERSION_CODE.
+
+          Compilado y firmado por GitHub Actions con el certificado del APK original de DARK. Conserva la licencia GPLv3 y los créditos de Metrolist. La validación incluye compilación, firma, identidad del APK, ktlint y las pruebas focalizadas de paleta y notificación; no sustituye pruebas en dispositivos Samsung.
+
+          Código de esta compilación: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA
+          Archivo de fuentes de esta revisión: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.zip
+          Ejecución: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+          Los archivos adjuntos incluyen el SHA-256 del APK y los datos de la compilación. Las etiquetas existentes no se mueven; el enlace al commit de esta compilación identifica el código exacto del APK.
+          EOF
+          gh release edit "$DARK_TAG" --repo "$GITHUB_REPOSITORY" \
+            --draft=false --prerelease --latest=false --notes-file ../release-notes.md
+          echo "APK: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$DARK_TAG/DARK-$DARK_TAG.apk" >> "$GITHUB_STEP_SUMMARY"

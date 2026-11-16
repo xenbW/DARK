@@ -208,6 +208,9 @@ android {
         minSdk = 24
         targetSdk = 37
         versionCode = 154
+        providers.gradleProperty("darkVersionCode").orNull?.let { value ->
+            versionCode = value.toInt().also { require(it in 1..2100000000) { "darkVersionCode must be a positive Android version code" } }
+        }
         versionName = appVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
