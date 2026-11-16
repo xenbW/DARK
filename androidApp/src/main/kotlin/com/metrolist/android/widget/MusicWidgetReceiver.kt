@@ -77,10 +77,10 @@ class MusicWidgetReceiver :
     }
 
     companion object {
-        const val ACTION_PLAY_PAUSE = "com.metrolist.music.widget.PLAY_PAUSE"
-        const val ACTION_LIKE = "com.metrolist.music.widget.LIKE"
-        const val ACTION_NEXT = "com.metrolist.music.widget.NEXT"
-        const val ACTION_PREVIOUS = "com.metrolist.music.widget.PREVIOUS"
-        const val ACTION_UPDATE_WIDGET = "com.metrolist.music.widget.UPDATE_WIDGET"
+        const val ACTION_PLAY_PAUSE = "io.github.xenbw.dark.widget.PLAY_PAUSE"
+        const val ACTION_LIKE = "io.github.xenbw.dark.widget.LIKE"
+        const val ACTION_NEXT = "io.github.xenbw.dark.widget.NEXT"
+        const val ACTION_PREVIOUS = "io.github.xenbw.dark.widget.PREVIOUS"
+        const val ACTION_UPDATE_WIDGET = "io.github.xenbw.dark.widget.UPDATE_WIDGET"
     }
 }

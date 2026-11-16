@@ -5,136 +5,99 @@
 
 package com.metrolist.android.ui.theme
 
-import android.app.UiModeManager
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.drawable.ColorDrawable
-import android.os.Build
-import androidx.annotation.RequiresApi
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.colorResource
 import androidx.core.view.WindowCompat
 import com.metrolist.android.extensions.findActivity
 import com.metrolist.android.utils.isAndroidTv
-import com.metrolist.shared.settings.Settings
-import com.metrolist.shared.settings.ThemePaletteStyle
 import com.metrolist.shared.ui.LocalIsTv
 import com.metrolist.shared.ui.components.FocusOutlineProvider
 import com.metrolist.shared.ui.haptics.MetrolistHapticsProvider
-import com.metrolist.shared.ui.theme.DefaultThemeColor
 import com.metrolist.shared.ui.theme.MetrolistShapes
 import com.metrolist.shared.ui.theme.ThemeColorExtractor
-import com.metrolist.shared.ui.theme.animateColorScheme
-import com.metrolist.shared.ui.theme.orIfIllegible
 import com.metrolist.shared.ui.theme.pureBlack
-import com.metrolist.shared.ui.theme.themeColorScheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import timber.log.Timber
+
+// Keep the application chrome neutral; artwork palettes belong to the player.
+internal val DarkColorScheme =
+    darkColorScheme(
+        primary = Color.White,
+        onPrimary = Color.Black,
+        primaryContainer = Color(0xFF242424),
+        onPrimaryContainer = Color.White,
+        inversePrimary = Color(0xFF333333),
+        secondary = Color(0xFFCCCCCC),
+        onSecondary = Color.Black,
+        secondaryContainer = Color(0xFF242424),
+        onSecondaryContainer = Color.White,
+        tertiary = Color(0xFFAAAAAA),
+        onTertiary = Color.Black,
+        tertiaryContainer = Color(0xFF242424),
+        onTertiaryContainer = Color.White,
+        onBackground = Color.White,
+        onSurface = Color.White,
+        onSurfaceVariant = Color(0xFFB3B3B3),
+        surfaceTint = Color.Transparent,
+        inverseSurface = Color.White,
+        inverseOnSurface = Color.Black,
+        outline = Color(0xFF808080),
+        outlineVariant = Color(0xFF333333),
+        scrim = Color.Black,
+        error = Color(0xFFCCCCCC),
+        onError = Color.Black,
+        errorContainer = Color(0xFF333333),
+        onErrorContainer = Color.White,
+        primaryFixed = Color(0xFFE6E6E6),
+        primaryFixedDim = Color(0xFFCCCCCC),
+        onPrimaryFixed = Color.Black,
+        onPrimaryFixedVariant = Color(0xFF333333),
+        secondaryFixed = Color(0xFFE6E6E6),
+        secondaryFixedDim = Color(0xFFCCCCCC),
+        onSecondaryFixed = Color.Black,
+        onSecondaryFixedVariant = Color(0xFF333333),
+        tertiaryFixed = Color(0xFFE6E6E6),
+        tertiaryFixedDim = Color(0xFFCCCCCC),
+        onTertiaryFixed = Color.Black,
+        onTertiaryFixedVariant = Color(0xFF333333),
+    ).pureBlack()
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun MetrolistTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    pureBlack: Boolean = false,
-    themeColor: Color = DefaultThemeColor,
-    dynamicColor: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
-    content: @Composable () -> Unit,
-) {
+fun MetrolistTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
     val view = LocalView.current
-    val lightStatusBars = SystemBarAppearance.playerLightStatusBars ?: (!darkTheme && SystemBarAppearance.imageOwners == 0)
     SideEffect {
         context.findActivity()?.window?.let { window ->
             WindowCompat.getInsetsController(window, view).apply {
-                isAppearanceLightStatusBars = lightStatusBars
-                isAppearanceLightNavigationBars = !darkTheme
+                isAppearanceLightStatusBars = SystemBarAppearance.playerLightStatusBars ?: false
+                isAppearanceLightNavigationBars = false
             }
         }
     }
-    val isTv = remember(context) { context.isAndroidTv() }
-    val paletteStyle = Settings.shared.themePaletteStyle
-
-    val useSystemDynamicColor = dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-
-    val contrast = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) rememberSystemContrast(context) else 0f
-
-    val baseColorScheme =
-        if (useSystemDynamicColor) {
-            val configuration = LocalConfiguration.current
-            val wallpaperSeed = colorResource(android.R.color.system_accent1_500)
-            remember(context, configuration, darkTheme, contrast, paletteStyle, wallpaperSeed) {
-                val generated = { themeColorScheme(wallpaperSeed, darkTheme, paletteStyle, contrast.toDouble()) }
-                if (paletteStyle == ThemePaletteStyle.TONAL_SPOT) {
-                    systemDynamicColorScheme(context, darkTheme).orIfIllegible(darkTheme) {
-                        Timber.w("System dynamic colors are illegible on %s; generating from the wallpaper seed", Build.MANUFACTURER)
-                        generated()
-                    }
-                } else {
-                    generated()
-                }
-            }
-        } else {
-            val generateScheme = {
-                themeColorScheme(themeColor, darkTheme, paletteStyle, contrast.toDouble())
-            }
-            key(darkTheme, contrast) {
-                val initial = remember { (themeColor to paletteStyle) to generateScheme() }
-                val scheme by produceState(
-                    initialValue = initial.second,
-                    key1 = themeColor,
-                    key2 = paletteStyle,
-                ) {
-                    value =
-                        if (initial.first == (themeColor to paletteStyle)) {
-                            initial.second
-                        } else {
-                            withContext(Dispatchers.Default) { generateScheme() }
-                        }
-                }
-                scheme
-            }
-        }
-
-    val colorScheme =
-        remember(baseColorScheme, pureBlack, darkTheme) {
-            if (darkTheme && pureBlack) {
-                baseColorScheme.pureBlack()
-            } else {
-                baseColorScheme
-            }
-        }
-
-    val motionScheme = remember { MotionScheme.expressive() }
-    val animatedColorScheme = animateColorScheme(colorScheme, motionScheme)
-    val background = colorScheme.surface.toArgb()
-    DisposableEffect(context, background) {
-        context.findActivity()?.window?.setBackgroundDrawable(ColorDrawable(background))
+    DisposableEffect(context) {
+        context.findActivity()?.window?.setBackgroundDrawable(ColorDrawable(Color.Black.toArgb()))
         onDispose { }
     }
-
+    val isTv = remember(context) { context.isAndroidTv() }
+    val motionScheme = remember { MotionScheme.expressive() }
     MaterialExpressiveTheme(
-        colorScheme = animatedColorScheme,
+        colorScheme = DarkColorScheme,
         typography = getAppTypography(),
         shapes = MetrolistShapes,
         motionScheme = motionScheme,
@@ -145,20 +108,6 @@ fun MetrolistTheme(
             }
         }
     }
-}
-
-@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-@Composable
-private fun rememberSystemContrast(context: Context): Float {
-    val modeManager = remember(context) { context.getSystemService(UiModeManager::class.java) }
-    var contrast by remember(modeManager) { mutableFloatStateOf(modeManager.contrast) }
-    DisposableEffect(modeManager) {
-        val listener = UiModeManager.ContrastChangeListener { contrast = it }
-        modeManager.addContrastChangeListener(context.mainExecutor, listener)
-        contrast = modeManager.contrast
-        onDispose { modeManager.removeContrastChangeListener(listener) }
-    }
-    return contrast
 }
 
 fun Bitmap.extractThemeColor(): Color = ThemeColorExtractor().extractSeedColor(this)

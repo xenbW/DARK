@@ -48,7 +48,7 @@ class PlaybackServiceStartTest {
             val shadow = shadowOf(service)
             assertEquals(DefaultMediaNotificationProvider.DEFAULT_NOTIFICATION_ID, shadow.lastForegroundNotificationId)
             val notification = shadow.lastForegroundNotification
-            assertEquals(R.string.app_name.toString(), notification.extras.getCharSequence("android.title"))
+            assertEquals(R.string.dark_app_name.toString(), notification.extras.getCharSequence("android.title"))
             assertTrue(notification.smallIcon != null)
             assertTrue(notification.contentIntent != null)
         } finally {

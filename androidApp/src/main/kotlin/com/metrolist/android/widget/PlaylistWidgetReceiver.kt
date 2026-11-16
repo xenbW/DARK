@@ -91,8 +91,8 @@ class PlaylistWidgetReceiver :
 
     companion object {
         private const val TAG = "PlaylistWidgetReceiver"
-        const val ACTION_PLAY_TARGET = "com.metrolist.music.widget.playlists.PLAY_TARGET"
-        const val ACTION_UPDATE_WIDGET = "com.metrolist.music.widget.playlists.UPDATE_WIDGET"
+        const val ACTION_PLAY_TARGET = "io.github.xenbw.dark.widget.playlists.PLAY_TARGET"
+        const val ACTION_UPDATE_WIDGET = "io.github.xenbw.dark.widget.playlists.UPDATE_WIDGET"
 
         const val EXTRA_TARGET_TYPE = "playlist_widget_target_type"
         const val EXTRA_TARGET_ID = "playlist_widget_target_id"

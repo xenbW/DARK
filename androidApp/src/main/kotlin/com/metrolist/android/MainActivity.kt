@@ -102,17 +102,17 @@ internal class NavigationRestorationViewModel(
 
 class MainActivity : ComponentActivity() {
     companion object {
-        const val ACTION_SEARCH = "com.metrolist.music.action.SEARCH"
-        const val ACTION_PLAYLIST_IMPORT = "com.metrolist.music.action.PLAYLIST_IMPORT"
+        const val ACTION_SEARCH = "io.github.xenbw.dark.action.SEARCH"
+        const val ACTION_PLAYLIST_IMPORT = "io.github.xenbw.dark.action.PLAYLIST_IMPORT"
         const val EXTRA_IMPORT_RESULT_MESSAGE = "import_result_message"
-        const val ACTION_DOWNLOADS = "com.metrolist.music.action.DOWNLOADS"
-        const val ACTION_LISTEN_TOGETHER = "com.metrolist.music.action.LISTEN_TOGETHER"
-        const val ACTION_LIBRARY = "com.metrolist.music.action.LIBRARY"
-        const val ACTION_UPDATES = "com.metrolist.music.action.UPDATES"
-        const val ACTION_LOGIN = "com.metrolist.music.action.LOGIN"
-        const val ACTION_BACKUP_RESTORE = "com.metrolist.music.action.BACKUP_RESTORE"
-        const val ACTION_RECOGNITION = "com.metrolist.music.action.RECOGNITION"
-        const val ACTION_OPEN_WIDGET_TARGET = "com.metrolist.music.action.OPEN_WIDGET_TARGET"
+        const val ACTION_DOWNLOADS = "io.github.xenbw.dark.action.DOWNLOADS"
+        const val ACTION_LISTEN_TOGETHER = "io.github.xenbw.dark.action.LISTEN_TOGETHER"
+        const val ACTION_LIBRARY = "io.github.xenbw.dark.action.LIBRARY"
+        const val ACTION_UPDATES = "io.github.xenbw.dark.action.UPDATES"
+        const val ACTION_LOGIN = "io.github.xenbw.dark.action.LOGIN"
+        const val ACTION_BACKUP_RESTORE = "io.github.xenbw.dark.action.BACKUP_RESTORE"
+        const val ACTION_RECOGNITION = "io.github.xenbw.dark.action.RECOGNITION"
+        const val ACTION_OPEN_WIDGET_TARGET = "io.github.xenbw.dark.action.OPEN_WIDGET_TARGET"
         const val EXTRA_WIDGET_TARGET_TYPE = "widget_target_type"
         const val EXTRA_WIDGET_TARGET_ID = "widget_target_id"
     }

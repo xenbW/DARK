@@ -9,6 +9,7 @@
     <!-- Bottom navigation -->
     <!-- Translators: Label for app name in the multiple app screens. -->
     <string name="app_name" translatable="false">Metrolist</string>
+    <string name="dark_app_name" translatable="false">DARK</string>
     <string name="account_menu_license" translatable="false">GPL-3.0 MetrolistGroup</string>
     <!-- Translators: Apple mobile platform name displayed in application information. -->
     <!-- Translators: Navigation label for home in the multiple app screens. -->

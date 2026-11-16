@@ -32,7 +32,7 @@ internal fun Service.promotePlaybackServiceStart(notification: MediaNotification
             NotificationCompat
                 .Builder(this, PLAYBACK_NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle(getString(R.string.app_name))
+                .setContentTitle(getString(R.string.dark_app_name))
                 .setContentIntent(
                     PendingIntent.getActivity(
                         this,

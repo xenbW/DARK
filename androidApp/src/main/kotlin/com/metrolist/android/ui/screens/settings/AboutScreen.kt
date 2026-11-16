@@ -17,7 +17,7 @@ import com.metrolist.android.playback.LocalPlayerConnection
 import com.metrolist.android.playback.resolveIncomingPlaybackSong
 import com.metrolist.shared.discord.openDiscordUrl
 import com.metrolist.shared.generated.resources.Res
-import com.metrolist.shared.generated.resources.app_name
+import com.metrolist.shared.generated.resources.dark_app_name
 import com.metrolist.shared.generated.resources.logo
 import com.metrolist.shared.generated.resources.youtube_music
 import com.metrolist.shared.state.GlobalYouTubeRepository
@@ -42,7 +42,7 @@ fun AndroidAboutScreen(
 
     AboutScreen(
         logo = painterResource(Res.drawable.logo),
-        appName = stringResource(Res.string.app_name),
+        appName = stringResource(Res.string.dark_app_name),
         version = BuildConfig.VERSION_NAME,
         isDebug = BuildConfig.DEBUG,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 24.dp),

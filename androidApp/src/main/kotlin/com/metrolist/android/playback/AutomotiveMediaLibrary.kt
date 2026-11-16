@@ -481,7 +481,7 @@ internal class AutomotiveMediaLibrary(
     val rootItem: MediaItem =
         folder(
             mediaId = AutomotiveMediaIds.ROOT,
-            title = context.getString(R.string.app_name),
+            title = context.getString(R.string.dark_app_name),
             childPlayableStyle = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
             childBrowsableStyle = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_CATEGORY_LIST_ITEM,
         )
