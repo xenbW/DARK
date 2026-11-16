@@ -242,6 +242,17 @@ android {
         releaseConfig.keyPassword = keyPasswordVal
     }
 
+    providers.gradleProperty("darkDebugKeystore").orNull?.let { path ->
+        val originalKeystore = file(path)
+        require(originalKeystore.isFile) { "darkDebugKeystore must point to the original DARK keystore" }
+        signingConfigs.getByName("debug").apply {
+            storeFile = originalKeystore
+            this.storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true

@@ -39,7 +39,7 @@ The pinned public certificate SHA-256 is:
 cf35916b8688602f910bf579cc1170389d8e463832cc994523300fd313196469
 ```
 
-The workflow fails before compiling if the secret is missing, invalid or signed by a different certificate. It never generates a substitute key. Keep a secure backup of the original keystore: losing it prevents updates to installations signed with that key. This remains a debug testing channel, not production release signing. The package stays `io.github.xenbw.dark.debug`; switching to the release package or a new key creates a separate installation or requires an explicit migration plan.
+The workflow restores the keystore under `RUNNER_TEMP` and passes its explicit path to Gradle with `-PdarkDebugKeystore`. It does not depend on the runner's default Android debug keystore location. The workflow fails before compiling if the secret is missing, invalid or signed by a different certificate. Keep a secure backup of the original keystore: losing it prevents updates to installations signed with that key. This remains a debug testing channel, not production release signing. The package stays `io.github.xenbw.dark.debug`; switching to the release package or a new key creates a separate installation or requires an explicit migration plan.
 
 ### Future updates and versions
 

@@ -24,7 +24,7 @@ def metadata(tag, run_number):
 
 def check_certificate(certificates):
     if certificates != [CERT_SHA256]:
-        raise ValueError("Signing certificate differs from the original DARK APK")
+        raise ValueError(f"Signing certificate differs from the original DARK APK: expected {CERT_SHA256}, got {certificates}")
 
 
 def check_badging(text, version, code):

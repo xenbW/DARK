@@ -57,12 +57,13 @@ jobs:
           value = os.environ.get("DARK_DEBUG_KEYSTORE_BASE64", "").strip()
           if not value:
               raise SystemExit("::error::Set repository Actions secret DARK_DEBUG_KEYSTORE_BASE64 to the original DARK debug keystore. No new signing key will be generated.")
-          target = Path.home() / ".android/debug.keystore"
-          target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+          target = Path(os.environ["RUNNER_TEMP"]) / "dark-debug.keystore"
           target.write_bytes(base64.b64decode(value, validate=True))
           target.chmod(0o600)
+          with open(os.environ["GITHUB_ENV"], "a") as environment:
+              environment.write(f"DARK_DEBUG_KEYSTORE_PATH={target}\n")
           PY
-          python3 .github/scripts/dark_android_release.py verify-keystore "$HOME/.android/debug.keystore"
+          python3 .github/scripts/dark_android_release.py verify-keystore "$RUNNER_TEMP/dark-debug.keystore"
 
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
@@ -84,12 +85,14 @@ jobs:
         run: |
           ./gradlew :androidApp:assembleDebug :androidApp:ktlintCheck \
             --no-daemon --no-scan --no-configuration-cache --max-workers=2 \
-            "-PappVersion=$DARK_VERSION" "-PdarkVersionCode=$DARK_VERSION_CODE"
+            "-PappVersion=$DARK_VERSION" "-PdarkVersionCode=$DARK_VERSION_CODE" \
+            "-PdarkDebugKeystore=$DARK_DEBUG_KEYSTORE_PATH"
           ./gradlew :androidApp:testDebugUnitTest \
             --tests com.metrolist.android.ui.theme.DarkColorSchemeTest \
             --tests com.metrolist.android.playback.PlaybackServiceStartTest \
             --no-daemon --no-scan --no-configuration-cache --max-workers=2 \
-            "-PappVersion=$DARK_VERSION" "-PdarkVersionCode=$DARK_VERSION_CODE"
+            "-PappVersion=$DARK_VERSION" "-PdarkVersionCode=$DARK_VERSION_CODE" \
+            "-PdarkDebugKeystore=$DARK_DEBUG_KEYSTORE_PATH"
 
       - name: Verify APK and collect distribution files
         env:
@@ -110,7 +113,7 @@ jobs:
 
       - name: Remove runner signing key
         if: always()
-        run: rm -f "$HOME/.android/debug.keystore"
+        run: rm -f "$RUNNER_TEMP/dark-debug.keystore"
 
   publish:
     needs: build
