@@ -1,6 +1,7 @@
 package com.metrolist.android.viewmodels
 
 import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewModelScope
 import androidx.room3.Room
 import androidx.sqlite.driver.AndroidSQLiteDriver
 import com.metrolist.android.playback.AudioCacheManager
@@ -20,7 +21,10 @@ import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -51,6 +55,7 @@ class AlbumFavoriteTest {
                     },
                 ) { install(ContentNegotiation) { json() } }
             val store = ViewModelStore()
+            val viewModelJobs = mutableListOf<Job>()
             try {
                 val album = AlbumEntity(id = "album", title = "Album", songCount = 0, duration = 0)
                 database.dao().upsert(album)
@@ -58,6 +63,8 @@ class AlbumFavoriteTest {
                 val repository = YouTubeRepository(InnerTube(client))
                 val first = AlbumViewModel(album.id, database, downloads, backgroundScope, repository)
                 val second = AlbumViewModel(album.id, database, downloads, backgroundScope, repository)
+                viewModelJobs += first.viewModelScope.coroutineContext.job
+                viewModelJobs += second.viewModelScope.coroutineContext.job
                 store.put("first", first)
                 store.put("second", second)
                 awaitPlaylistState { !first.isLoading.value && !second.isLoading.value }
@@ -76,6 +83,8 @@ class AlbumFavoriteTest {
                 assertFalse(first.isFavorite.value)
             } finally {
                 store.clear()
+                // Database observers run on IO; cancellation must finish before closing their connection.
+                viewModelJobs.joinAll()
                 client.close()
                 database.close()
                 Dispatchers.resetMain()

@@ -93,6 +93,17 @@ jobs:
             "-PappVersion=$DARK_VERSION" "-PdarkVersionCode=$DARK_VERSION_CODE" \
             "-PdarkDebugKeystore=$DARK_DEBUG_KEYSTORE_PATH"
 
+      - name: Retain unit test reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dark-test-results
+          path: |
+            androidApp/build/test-results/**/*.xml
+            shared/build/test-results/**/*.xml
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Verify APK and collect distribution files
         env:
           DARK_TAG: ${{ steps.metadata.outputs.tag }}
