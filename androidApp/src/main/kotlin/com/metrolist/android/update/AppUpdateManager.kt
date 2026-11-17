@@ -136,6 +136,9 @@ object AppUpdateManager {
         context: Context,
         networkEnabled: Boolean,
     ): GitHubRelease? {
+        if (Settings.shared.updateCacheSource != CACHE_SOURCE) {
+            context.getSystemService(NotificationManager::class.java)?.cancel(NOTIFICATION_ID)
+        }
         ensureDarkCacheSource()
         val now = System.currentTimeMillis()
         val lastAttempt = Settings.shared.lastUpdateCheckAttemptTimestamp
