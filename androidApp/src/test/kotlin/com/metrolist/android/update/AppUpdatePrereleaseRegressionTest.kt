@@ -28,22 +28,22 @@ class AppUpdatePrereleaseRegressionTest {
     }
 
     @Test
-    fun validDarkAlphaCanBeOfferedFromCache() =
+    fun validDarkReleaseCanBeOfferedFromCache() =
         runTest {
             Settings.shared.cachedAvailableUpdateJson =
                 """
                 {
-                  "tag_name":"v999.0.0-alpha",
-                  "prerelease":true,
-                  "html_url":"https://github.com/xenbW/DARK/releases/tag/v999.0.0-alpha",
+                  "tag_name":"v999.0.0",
+                  "prerelease":false,
+                  "html_url":"https://github.com/xenbW/DARK/releases/tag/v999.0.0",
                   "assets":[{
-                    "name":"DARK-v999.0.0-alpha.apk", "state":"uploaded", "size":100,
-                    "browser_download_url":"https://github.com/xenbW/DARK/releases/download/v999.0.0-alpha/DARK-v999.0.0-alpha.apk"
+                    "name":"DARK-v999.0.0.apk", "state":"uploaded", "size":100,
+                    "browser_download_url":"https://github.com/xenbW/DARK/releases/download/v999.0.0/DARK-v999.0.0.apk"
                   }]
                 }
                 """.trimIndent()
             assertEquals(
-                "999.0.0-alpha",
+                "999.0.0",
                 AppUpdateManager.checkAtStartup(RuntimeEnvironment.getApplication(), networkEnabled = false)?.version,
             )
         }

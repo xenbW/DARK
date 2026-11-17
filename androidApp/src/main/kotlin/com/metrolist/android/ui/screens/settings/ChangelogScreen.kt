@@ -21,7 +21,7 @@ import com.metrolist.android.ui.component.AdaptiveModalBottomSheet
 import com.metrolist.android.update.GitHubRelease
 import com.metrolist.shared.generated.resources.Res
 import com.metrolist.shared.generated.resources.close
-import com.metrolist.shared.generated.resources.updates_release_notes_title
+import com.metrolist.shared.generated.resources.dark_updates_release_notes_title
 import com.metrolist.shared.ui.update.GitHubMarkdown
 import com.metrolist.shared.ui.update.rememberReleaseNotesState
 import com.mikepenz.markdown.model.State
@@ -48,7 +48,7 @@ fun ReleaseNotesSheet(
         ) {
             item {
                 Text(
-                    stringResource(Res.string.updates_release_notes_title, release.version),
+                    stringResource(Res.string.dark_updates_release_notes_title, release.version),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                 )

@@ -261,6 +261,7 @@ import com.metrolist.shared.generated.resources.back
 import com.metrolist.shared.generated.resources.cancel
 import com.metrolist.shared.generated.resources.continue_playback_message
 import com.metrolist.shared.generated.resources.continue_playback_title
+import com.metrolist.shared.generated.resources.dark_updates_available_title
 import com.metrolist.shared.generated.resources.devtools_title
 import com.metrolist.shared.generated.resources.downloads
 import com.metrolist.shared.generated.resources.error
@@ -282,7 +283,6 @@ import com.metrolist.shared.generated.resources.search
 import com.metrolist.shared.generated.resources.update_pending
 import com.metrolist.shared.generated.resources.updates_action
 import com.metrolist.shared.generated.resources.updates_available_message
-import com.metrolist.shared.generated.resources.updates_available_title
 import com.metrolist.shared.generated.resources.updates_changelog_preview
 import com.metrolist.shared.generated.resources.updates_pending_parenthetical
 import com.metrolist.shared.generated.resources.youtube_music
@@ -578,7 +578,7 @@ fun MetrolistApp(
         PopupContent(updatePrompt) { release ->
             AlertDialog(
                 onDismissRequest = { updatePrompt = null },
-                title = { Text(stringResource(Res.string.updates_available_title, release.version)) },
+                title = { Text(stringResource(Res.string.dark_updates_available_title, release.version)) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(stringResource(Res.string.updates_available_message))

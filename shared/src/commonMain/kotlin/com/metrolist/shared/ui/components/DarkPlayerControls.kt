@@ -22,6 +22,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.metrolist.shared.ui.icons.MetrolistIcons
 
@@ -54,7 +56,11 @@ internal fun DarkPlayerControls(
                 modifier = Modifier.size(64.dp).then(focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier),
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(26.dp), color = Color.White, strokeWidth = 2.dp)
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(26.dp).semantics { contentDescription = if (isPlaying) pauseText else playText },
+                        color = Color.White,
+                        strokeWidth = 2.dp,
+                    )
                 } else {
                     Icon(
                         if (isPlaying) MetrolistIcons.Rounded.Pause else MetrolistIcons.Rounded.PlayArrow,

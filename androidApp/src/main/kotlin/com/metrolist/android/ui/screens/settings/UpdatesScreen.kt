@@ -86,12 +86,15 @@ import com.metrolist.shared.generated.resources.crash_updates_installer_failed
 import com.metrolist.shared.generated.resources.crash_updates_installing_description
 import com.metrolist.shared.generated.resources.crash_updates_installing_title
 import com.metrolist.shared.generated.resources.crash_updates_last_check
-import com.metrolist.shared.generated.resources.crash_updates_no_updates
 import com.metrolist.shared.generated.resources.crash_updates_pending_title
 import com.metrolist.shared.generated.resources.crash_updates_release_unavailable
 import com.metrolist.shared.generated.resources.crash_updates_retry
 import com.metrolist.shared.generated.resources.crash_updates_size
-import com.metrolist.shared.generated.resources.crash_updates_version
+import com.metrolist.shared.generated.resources.dark_crash_updates_no_updates
+import com.metrolist.shared.generated.resources.dark_crash_updates_version
+import com.metrolist.shared.generated.resources.dark_updates_no_updates
+import com.metrolist.shared.generated.resources.dark_updates_status_current
+import com.metrolist.shared.generated.resources.dark_updates_version
 import com.metrolist.shared.generated.resources.general
 import com.metrolist.shared.generated.resources.settings_notification_access_summary
 import com.metrolist.shared.generated.resources.settings_release_overview
@@ -111,7 +114,6 @@ import com.metrolist.shared.generated.resources.updates_installer_failed
 import com.metrolist.shared.generated.resources.updates_installing_description
 import com.metrolist.shared.generated.resources.updates_installing_title
 import com.metrolist.shared.generated.resources.updates_last_check
-import com.metrolist.shared.generated.resources.updates_no_updates
 import com.metrolist.shared.generated.resources.updates_notification_settings
 import com.metrolist.shared.generated.resources.updates_notifications
 import com.metrolist.shared.generated.resources.updates_pending_title
@@ -122,9 +124,7 @@ import com.metrolist.shared.generated.resources.updates_share_apk
 import com.metrolist.shared.generated.resources.updates_share_apk_error
 import com.metrolist.shared.generated.resources.updates_share_app
 import com.metrolist.shared.generated.resources.updates_size
-import com.metrolist.shared.generated.resources.updates_status_current
 import com.metrolist.shared.generated.resources.updates_title
-import com.metrolist.shared.generated.resources.updates_version
 import com.metrolist.shared.ui.icons.MetrolistIcons
 import com.metrolist.shared.ui.settings.LocalSettingsPageHasTopBar
 import com.metrolist.shared.ui.settings.settingsPageSubtitle
@@ -323,7 +323,7 @@ private fun statusItem(
                     pending -> stringResource(Res.string.update_pending)
                     state is AppUpdateState.Checking -> stringResource(Res.string.updates_checking)
                     state is AppUpdateState.Error -> stringResource(Res.string.updates_error)
-                    else -> stringResource(Res.string.updates_status_current, AppUpdateManager.currentVersion)
+                    else -> stringResource(Res.string.dark_updates_status_current, AppUpdateManager.currentVersion)
                 },
             ),
         icon =
@@ -467,7 +467,7 @@ fun UpdateDetailsScreen(
             }
 
             else -> {
-                stringResource(if (crashRecovery) Res.string.crash_updates_no_updates else Res.string.updates_no_updates)
+                stringResource(if (crashRecovery) Res.string.dark_crash_updates_no_updates else Res.string.dark_updates_no_updates)
             }
         }
     val miniPlayerInset = LocalMiniPlayerBottomInset.current
@@ -609,7 +609,10 @@ fun UpdateDetailsScreen(
             if (release == null) {
                 UpdateInfo(
                     version = AppUpdateManager.currentVersion,
-                    versionLabel = stringResource(if (crashRecovery) Res.string.crash_updates_version else Res.string.updates_version),
+                    versionLabel =
+                        stringResource(
+                            if (crashRecovery) Res.string.dark_crash_updates_version else Res.string.dark_updates_version,
+                        ),
                     details =
                         listOf(
                             stringResource(if (crashRecovery) Res.string.crash_updates_last_check else Res.string.updates_last_check) to
@@ -627,7 +630,10 @@ fun UpdateDetailsScreen(
             } else {
                 UpdateInfo(
                     version = release.version,
-                    versionLabel = stringResource(if (crashRecovery) Res.string.crash_updates_version else Res.string.updates_version),
+                    versionLabel =
+                        stringResource(
+                            if (crashRecovery) Res.string.dark_crash_updates_version else Res.string.dark_updates_version,
+                        ),
                     details =
                         listOf(
                             stringResource(if (crashRecovery) Res.string.crash_updates_size else Res.string.updates_size) to

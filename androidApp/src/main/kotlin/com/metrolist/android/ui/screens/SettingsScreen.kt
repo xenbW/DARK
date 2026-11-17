@@ -86,12 +86,12 @@ import com.metrolist.shared.generated.resources.app_font_reset_confirm
 import com.metrolist.shared.generated.resources.app_font_reset_description
 import com.metrolist.shared.generated.resources.app_language_system
 import com.metrolist.shared.generated.resources.calculating
+import com.metrolist.shared.generated.resources.dark_settings_updates_available_description
+import com.metrolist.shared.generated.resources.dark_updates_no_updates
 import com.metrolist.shared.generated.resources.device_language
 import com.metrolist.shared.generated.resources.search_history_removal_failed
 import com.metrolist.shared.generated.resources.settings_storage_summary
-import com.metrolist.shared.generated.resources.settings_updates_available_description
 import com.metrolist.shared.generated.resources.spotify_import_error_sign_in_failed
-import com.metrolist.shared.generated.resources.updates_no_updates
 import com.metrolist.shared.settings.FontOption
 import com.metrolist.shared.state.GlobalYouTube
 import com.metrolist.shared.state.applyContentRegion
@@ -403,9 +403,9 @@ fun SettingsScreen(
                             appUpdateState is AppUpdateState.Downloaded ||
                             (appUpdateState as? AppUpdateState.Error)?.release != null
                         ) {
-                            stringResource(Res.string.settings_updates_available_description)
+                            stringResource(Res.string.dark_settings_updates_available_description)
                         } else {
-                            stringResource(Res.string.updates_no_updates)
+                            stringResource(Res.string.dark_updates_no_updates)
                         },
                     availablePages = availablePages,
                     initialPage = initialPage,

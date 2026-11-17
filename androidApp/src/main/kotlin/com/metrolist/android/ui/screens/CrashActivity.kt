@@ -111,12 +111,12 @@ import com.metrolist.shared.generated.resources.crash_updates_action
 import com.metrolist.shared.generated.resources.crash_updates_check
 import com.metrolist.shared.generated.resources.crash_updates_checking
 import com.metrolist.shared.generated.resources.crash_updates_error
-import com.metrolist.shared.generated.resources.crash_updates_no_updates
 import com.metrolist.shared.generated.resources.crash_upload
 import com.metrolist.shared.generated.resources.crash_upload_disclosure
 import com.metrolist.shared.generated.resources.crash_upload_failed
 import com.metrolist.shared.generated.resources.crash_uploaded
 import com.metrolist.shared.generated.resources.crash_uploading
+import com.metrolist.shared.generated.resources.dark_crash_updates_no_updates
 import com.metrolist.shared.ui.LocalIsTv
 import com.metrolist.shared.ui.components.ContainedLoadingIndicator
 import com.metrolist.shared.ui.crash.CrashLogsScreen
@@ -593,7 +593,7 @@ private fun CrashUpdateButton(onUpdate: () -> Unit) {
                 release != null -> "${stringResource(Res.string.crash_updates_action)} ·\u00a0${release.version}"
                 state is AppUpdateState.Checking -> stringResource(Res.string.crash_updates_checking)
                 state is AppUpdateState.Error -> stringResource(Res.string.crash_updates_error)
-                state is AppUpdateState.UpToDate -> stringResource(Res.string.crash_updates_no_updates)
+                state is AppUpdateState.UpToDate -> stringResource(Res.string.dark_crash_updates_no_updates)
                 else -> stringResource(Res.string.crash_updates_check)
             },
         )

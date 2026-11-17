@@ -268,7 +268,7 @@ class App :
             NotificationChannelCompat
                 .Builder(AppUpdateManager.CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_DEFAULT)
                 .setName(getString(R.string.updates_channel_name))
-                .setDescription(getString(R.string.updates_channel_description))
+                .setDescription(getString(R.string.dark_updates_channel_description))
                 .build(),
         )
         nm.createNotificationChannel(

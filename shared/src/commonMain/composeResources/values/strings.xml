@@ -5500,4 +5500,13 @@
     <string name="ai_setup_privacy_settings">Open privacy settings</string>
     <string name="ai_setup_sign_in_again">Sign in again</string>
     <string name="ai_setup_key_limits">Review key limits</string>
+    <string name="dark_settings_updates_available_description">A new DARK update is available</string>
+    <string name="dark_updates_no_updates">DARK is up to date</string>
+    <string name="dark_updates_status_current">Updated to DARK %1$s</string>
+    <string name="dark_updates_version">DARK version</string>
+    <string name="dark_updates_available_title">DARK %1$s is available</string>
+    <string name="dark_updates_channel_description">Notifications about new DARK versions</string>
+    <string name="dark_updates_release_notes_title">What\u0027s new in DARK %1$s</string>
+    <string name="dark_crash_updates_no_updates" translatable="false">DARK is up to date</string>
+    <string name="dark_crash_updates_version" translatable="false">DARK version</string>
 </resources>
