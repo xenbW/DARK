@@ -90,6 +90,7 @@ class AndroidPlayerPlatform(
     private val playerConnection: PlayerConnection,
     private val listenTogetherManager: ListenTogetherManager?,
 ) : PlayerPlatform {
+    override val useDarkDesign = true
     override val supportsPictureInPicture = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
     override val supportsVideoPlayback = true
     override val supportsCasting = true

@@ -78,7 +78,7 @@ def main():
         digest = hashlib.sha256(target.read_bytes()).hexdigest()
         target.with_suffix(".apk.sha256").write_text(f"{digest}  {target.name}\n")
         record = {
-            **values, "commit": args.commit, "workflow_run": args.run_url,
+            **values, "run_number": args.run_number, "commit": args.commit, "workflow_run": args.run_url,
             "package": PACKAGE, "certificate_sha256": CERT_SHA256, "apk_sha256": digest,
         }
         (args.output / f"DARK-{args.tag}-build.json").write_text(json.dumps(record, indent=2) + "\n")

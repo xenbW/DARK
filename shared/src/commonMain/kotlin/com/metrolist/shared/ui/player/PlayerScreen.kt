@@ -633,8 +633,8 @@ fun PlayerScreen(
                     (bottomSheetState.isExpanded && (isImmersive || uiState.isLyricsExpanded))
             )
 
-    val playerType = Settings.shared.playerType
-    val usesFullscreenThumbnail = playerThumbnailStyle == PlayerThumbnailStyle.FULLSCREEN
+    val playerType = if (platform.useDarkDesign) PlayerType.MODERN else Settings.shared.playerType
+    val usesFullscreenThumbnail = playerThumbnailStyle == PlayerThumbnailStyle.FULLSCREEN && !platform.useDarkDesign
     val prefersTallCover = usesFullscreenThumbnail && !isLandscape
     val playbackNetwork by PlaybackNetworkStateStore.state.collectAsState()
     val artworkAllowedOnNetwork = Settings.shared.isAnimatedArtworkAllowedOnNetwork(playbackNetwork)
@@ -667,7 +667,9 @@ fun PlayerScreen(
     val canRenderCanvasThumbnail =
         Settings.shared.isCanvasEnabled && currentCanvasLayer != null && currentCanvasLayer.source != CanvasContentSource.APPLE_MUSIC
     val isArtworkCover = currentCanvasLayer?.source == CanvasContentSource.APPLE_MUSIC
-    val renderAnimatedCover = artworkAllowedOnNetwork && canvasLayers.shouldRender(currentCanvasLayer, playerContentState)
+    val renderAnimatedCover =
+        (!platform.useDarkDesign || uiState.isLyricsVisible) &&
+            artworkAllowedOnNetwork && canvasLayers.shouldRender(currentCanvasLayer, playerContentState)
     val artworkOverlayContent by rememberUpdatedState<@Composable (Modifier) -> Unit> { artworkModifier ->
         if (renderAnimatedCover && isArtworkCover && (!isTv || !uiState.isLyricsVisible)) {
             canvasLayers.Render(
@@ -684,7 +686,8 @@ fun PlayerScreen(
             movableContentOf<Modifier> { artworkModifier -> artworkOverlayContent(artworkModifier) }
         }
     val animatedCoverReady = renderAnimatedCover && (currentCanvasLayer?.key in canvasLayers.ready || canvasLayers.isVisible)
-    val usesCanvasThumbnail = canRenderCanvasThumbnail && (animatedCoverReady || canvasLayers.hasPresented(currentCanvasLayer))
+    val usesCanvasThumbnail =
+        !platform.useDarkDesign && canRenderCanvasThumbnail && (animatedCoverReady || canvasLayers.hasPresented(currentCanvasLayer))
     LaunchedEffect(currentSong?.id, uiState.nextCanvasSongId, uiState.previousCanvasSongId) {
         canvasLayers.failed =
             canvasLayers.failed
@@ -699,7 +702,14 @@ fun PlayerScreen(
     LaunchedEffect(currentSong?.appleMusicAnimatedCoverUrl) {
         canvasLayers.failed = canvasLayers.failed.filterNot { it.first == CanvasContentSource.APPLE_MUSIC.name }.toSet()
     }
-    val playerBackground = Settings.shared.playerBackgroundStyle
+    val playerBackground =
+        if (platform.useDarkDesign &&
+            !uiState.isLyricsVisible
+        ) {
+            PlayerBackgroundStyle.SOLID
+        } else {
+            Settings.shared.playerBackgroundStyle
+        }
     val useRoundedRectPlayButton = Settings.shared.useRoundedRectPlayButton
     val playPauseFocusRequester = remember { FocusRequester() }
     val showControlsInFullscreen = !Settings.shared.lyricsHideStatusBarInFullscreen
@@ -800,13 +810,17 @@ fun PlayerScreen(
     }
 
     val backgroundColor =
-        when (playerBackground) {
-            PlayerBackgroundStyle.BLURRED_ARTWORK,
-            PlayerBackgroundStyle.GRADIENT,
-            PlayerBackgroundStyle.ANIMATED_GRADIENT,
-            PlayerBackgroundStyle.SOLID,
-            PlayerBackgroundStyle.LIQUID,
-            -> MaterialTheme.colorScheme.surfaceContainer
+        if (platform.useDarkDesign && !uiState.isLyricsVisible) {
+            Color.Black
+        } else {
+            when (playerBackground) {
+                PlayerBackgroundStyle.BLURRED_ARTWORK,
+                PlayerBackgroundStyle.GRADIENT,
+                PlayerBackgroundStyle.ANIMATED_GRADIENT,
+                PlayerBackgroundStyle.SOLID,
+                PlayerBackgroundStyle.LIQUID,
+                -> MaterialTheme.colorScheme.surfaceContainer
+            }
         }
 
     val (sideButtonContainerColor, sideButtonContentColor) =
@@ -865,7 +879,7 @@ fun PlayerScreen(
                 } else {
                     playerLayoutMode(screenWidth, maxHeight) == PlayerLayoutMode.LANDSCAPE
                 }
-            val useTabletLayout = isTv && useLandscapeLayout && minOf(screenWidth, maxHeight) >= 600.dp
+            val useTabletLayout = (isTv || platform.useDarkDesign) && useLandscapeLayout && minOf(screenWidth, maxHeight) >= 600.dp
             val compactPortraitHeight = !useLandscapeLayout && maxHeight < 560.dp
             val primaryControlSize = if (compactPortraitHeight) 64.dp else 72.dp
             val showFullscreenThumbnailBackground = usesFullscreenThumbnail
@@ -1753,8 +1767,19 @@ fun PlayerScreen(
                                                                             animatedVisibilityScope = this@AnimatedContent,
                                                                             boundsTransform = albumArtBoundsTransform,
                                                                             clipInOverlayDuringTransition = OverlayClip(albumArtShape),
+                                                                        ).then(
+                                                                            if (platform.useDarkDesign) {
+                                                                                Modifier.widthIn(
+                                                                                    max = 420.dp,
+                                                                                )
+                                                                            } else {
+                                                                                Modifier
+                                                                            },
                                                                         ).aspectRatio(1f)
-                                                                        .clip(albumArtShape),
+                                                                        .darkArtworkAccent(
+                                                                            gradientColors.firstOrNull() ?: Color.Gray,
+                                                                            albumArtShape,
+                                                                        ).clip(albumArtShape),
                                                             ) {
                                                                 CrossfadeArtwork(
                                                                     animate = LocalPlayerContentActive.current,

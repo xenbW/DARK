@@ -93,6 +93,7 @@ import com.metrolist.shared.ui.haptics.HapticEvent
 import com.metrolist.shared.ui.haptics.rememberMetrolistHaptics
 import com.metrolist.shared.ui.icons.MetrolistIcons
 import com.metrolist.shared.ui.navigation.navigationPopupSource
+import com.metrolist.shared.ui.player.LocalPlayerPlatform
 import com.metrolist.shared.ui.tv.tvFocusHighlight
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -149,6 +150,26 @@ fun PlayerPrimaryControls(
     nextText: String = stringResource(Res.string.next),
     showLoadingIndicator: Boolean = true,
 ) {
+    if (LocalPlayerPlatform.current.useDarkDesign) {
+        val haptics = rememberMetrolistHaptics()
+        DarkPlayerControls(
+            isPlaying = isPlaying,
+            isLoading = isLoading && showLoadingIndicator,
+            playText = playText,
+            pauseText = pauseText,
+            previousText = previousText,
+            nextText = nextText,
+            onPrevious = onSkipPrevious,
+            onPlayPause = {
+                haptics.toggle(!isPlaying)
+                onTogglePlay()
+            },
+            onNext = onSkipNext,
+            focusRequester = playPauseFocusRequester,
+            modifier = modifier,
+        )
+        return
+    }
     val haptics = rememberMetrolistHaptics()
     val prevInteractionSource = remember { MutableInteractionSource() }
     val nextInteractionSource = remember { MutableInteractionSource() }

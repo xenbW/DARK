@@ -38,6 +38,8 @@ import com.metrolist.shared.generated.resources.live
 import com.metrolist.shared.generated.resources.playback_position_time
 import com.metrolist.shared.playback.PendingSeekPosition
 import com.metrolist.shared.playback.interpolatePlaybackPosition
+import com.metrolist.shared.settings.Settings
+import com.metrolist.shared.settings.SliderStyle
 import com.metrolist.shared.ui.components.LiveBadge
 import com.metrolist.shared.ui.components.sliders.PlaybackProgressSlider
 import com.metrolist.shared.ui.components.sliders.collectPlaybackDisplayState
@@ -195,6 +197,8 @@ internal fun PlayerProgressSlider(
             isPlaying = isPlaying && !isPlaybackLoading,
             bufferedFraction = if (isLive) 1f else bufferedProgress,
             animate = active,
+            style = if (LocalPlayerPlatform.current.useDarkDesign && !isLive) SliderStyle.WAVY else Settings.shared.sliderStyle,
+            trackThicknessDp = if (LocalPlayerPlatform.current.useDarkDesign) 3f else Settings.shared.sliderTrackThicknessDp,
             colors =
                 if (isLive) {
                     val activeColor = progressColor ?: MaterialTheme.colorScheme.primary

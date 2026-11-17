@@ -8,32 +8,44 @@ import org.junit.Test
 
 class AppUpdateManagerTest {
     @Test
-    fun apkSelectionPicksTheUniversalApk() {
-        assertEquals("Metrolist.apk", releaseWithAssets("Metrolist.apk", "metrolist-android-14.0.0-arm64-v8a.apk").apk?.name)
-        assertEquals(
-            "Metrolist.apk",
-            releaseWithAssets("Metrolist-izzy.apk", "Metrolist-with-Google-Cast.apk", "Metrolist.apk").apk?.name,
-        )
-        assertEquals("metrolist-android-14.0.0.apk", releaseWithAssets("metrolist-android-14.0.0.apk").apk?.name)
-        assertEquals("metrolist-android-14.0.0-universal.apk", releaseWithAssets("metrolist-android-14.0.0-universal.apk").apk?.name)
+    fun apkSelectionAcceptsOnlyTheDarkReleaseAsset() {
+        val release = darkRelease()
+        assertEquals("DARK-v0.2.0-alpha.apk", release.apk?.name)
+        assertNull(release.copy(htmlUrl = "https://github.com/MetrolistGroup/Metrolist/releases/tag/v0.2.0-alpha").apk)
+        assertNull(release.copy(assets = release.assets + release.assets).apk)
+        assertNull(release.copy(assets = release.assets.map { it.copy(state = "new") }).apk)
+        assertNull(release.copy(assets = release.assets.map { it.copy(downloadUrl = "https://example.com/update.apk") }).apk)
+        assertNull(release.copy(assets = release.assets.map { it.copy(name = "Metrolist.apk") }).apk)
     }
 
     @Test
-    fun apkSelectionRejectsAbiSpecificIncompleteAndAmbiguousAssets() {
-        assertNull(releaseWithAssets("metrolist-android-14.0.0-arm64-v8a.apk").apk)
-        assertNull(releaseWithAssets("metrolist-android-14.0.0-debug.apk").apk)
-        assertNull(releaseWithAssets("metrolist-android-13.0.0.apk").apk)
-        assertNull(releaseWithAssets("unknown.apk").apk)
-        val incomplete = releaseWithAssets("Metrolist.apk")
-        assertNull(incomplete.copy(assets = incomplete.assets.map { it.copy(state = "new") }).apk)
-        assertNull(releaseWithAssets("Metrolist.apk", "METROLIST.APK").apk)
+    fun alphaChannelAcceptsDarkPrereleasesButStableChannelDoesNot() {
+        assertTrue(acceptsDarkReleaseChannel(darkRelease(), "0.1.0-alpha"))
+        assertFalse(acceptsDarkReleaseChannel(darkRelease(), "0.1.0"))
+        assertFalse(acceptsDarkReleaseChannel(darkRelease().copy(draft = true), "0.1.0-alpha"))
+        assertFalse(
+            acceptsDarkReleaseChannel(
+                darkRelease().copy(htmlUrl = "https://github.com/MetrolistGroup/Metrolist/releases/tag/v0.2.0-alpha"),
+                "0.1.0-alpha",
+            ),
+        )
+        assertTrue(AppUpdateManager.compareVersions("0.2.0-alpha", "0.1.0-alpha") > 0)
     }
 
-    private fun releaseWithAssets(vararg names: String) =
+    private fun darkRelease() =
         GitHubRelease(
-            tagName = "v14.0.0",
-            htmlUrl = "https://github.com/MetrolistGroup/Metrolist/releases/tag/v14.0.0",
-            assets = names.map { GitHubReleaseAsset(it, "uploaded", 100, downloadUrl = "https://example.com/$it") },
+            tagName = "v0.2.0-alpha",
+            prerelease = true,
+            htmlUrl = "https://github.com/xenbW/DARK/releases/tag/v0.2.0-alpha",
+            assets =
+                listOf(
+                    GitHubReleaseAsset(
+                        "DARK-v0.2.0-alpha.apk",
+                        "uploaded",
+                        100,
+                        downloadUrl = "https://github.com/xenbW/DARK/releases/download/v0.2.0-alpha/DARK-v0.2.0-alpha.apk",
+                    ),
+                ),
         )
 
     @Test

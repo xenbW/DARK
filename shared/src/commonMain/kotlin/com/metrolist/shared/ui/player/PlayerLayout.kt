@@ -215,7 +215,7 @@ internal fun TabletPlayerContent(
     onArtworkSeek: (Long) -> Unit,
     seekFeedback: SeekFeedback?,
     seekFeedbackVisible: Boolean,
-    playerType: PlayerType = Settings.shared.playerType,
+    playerType: PlayerType = if (LocalPlayerPlatform.current.useDarkDesign) PlayerType.MODERN else Settings.shared.playerType,
     playPauseFocusRequester: FocusRequester? = null,
     showVideoSurface: Boolean = false,
     onOpenCast: () -> Unit,
@@ -244,7 +244,14 @@ internal fun TabletPlayerContent(
     ) {
         val compactHeight = maxHeight < 720.dp
         val compactWidth = maxWidth < 600.dp
-        val primaryControlSize = if (compactHeight) 64.dp else 104.dp
+        val primaryControlSize =
+            if (platform.useDarkDesign) {
+                64.dp
+            } else if (compactHeight) {
+                64.dp
+            } else {
+                104.dp
+            }
         val horizontalPadding =
             if (compactWidth) {
                 8.dp
@@ -437,7 +444,10 @@ internal fun TabletPlayerContent(
                                             modifier =
                                                 Modifier
                                                     .requiredSize(artworkSize)
-                                                    .clip(RoundedCornerShape(PlayerArtworkCornerRadius)),
+                                                    .darkArtworkAccent(
+                                                        uiState.gradientColors.firstOrNull() ?: Color.Gray,
+                                                        RoundedCornerShape(PlayerArtworkCornerRadius),
+                                                    ).clip(RoundedCornerShape(PlayerArtworkCornerRadius)),
                                             contentScale = ContentScale.Crop,
                                         )
                                         artworkOverlay(
@@ -861,7 +871,7 @@ internal fun LandscapePlayerContent(
     onArtworkSeek: (Long) -> Unit,
     seekFeedback: SeekFeedback?,
     seekFeedbackVisible: Boolean,
-    playerType: PlayerType = Settings.shared.playerType,
+    playerType: PlayerType = if (LocalPlayerPlatform.current.useDarkDesign) PlayerType.MODERN else Settings.shared.playerType,
     playPauseFocusRequester: FocusRequester? = null,
     showVideoSurface: Boolean = false,
     onOpenCast: () -> Unit = {},
@@ -907,7 +917,14 @@ internal fun LandscapePlayerContent(
     ) {
         val compactHeight = maxHeight < 520.dp
         val centerControls = !isTv && maxHeight >= 600.dp
-        val primaryControlSize = if (compactHeight) 64.dp else 104.dp
+        val primaryControlSize =
+            if (platform.useDarkDesign) {
+                64.dp
+            } else if (compactHeight) {
+                64.dp
+            } else {
+                104.dp
+            }
         val horizontalPadding = if (compactHeight) 16.dp else LandscapePlayerHorizontalPadding
         val verticalPadding = if (compactHeight) 8.dp else LandscapePlayerVerticalPadding
         val topButtonSize = if (compactHeight) 36.dp else 40.dp
@@ -1277,7 +1294,10 @@ internal fun LandscapePlayerContent(
                                             modifier =
                                                 Modifier
                                                     .requiredSize(artworkSize)
-                                                    .clip(RoundedCornerShape(PlayerArtworkCornerRadius)),
+                                                    .darkArtworkAccent(
+                                                        uiState.gradientColors.firstOrNull() ?: Color.Gray,
+                                                        RoundedCornerShape(PlayerArtworkCornerRadius),
+                                                    ).clip(RoundedCornerShape(PlayerArtworkCornerRadius)),
                                             contentScale = ContentScale.Crop,
                                         )
                                         artworkOverlay(

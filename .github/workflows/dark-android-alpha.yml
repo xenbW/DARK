@@ -2,25 +2,20 @@ name: DARK Android alpha
 
 on:
   push:
-    branches: [feat/dark-base-theme]
+    branches: [feat/dark-phase2]
+    tags: ['dark-release-v*']
   workflow_dispatch:
-    inputs:
-      tag:
-        description: Prerelease tag, for example v0.2.0-alpha
-        required: true
-        default: v0.1.0-alpha
-        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: dark-android-${{ inputs.tag || 'v0.1.0-alpha' }}
+  group: dark-android-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   build:
-    if: github.repository == 'xenbW/DARK' && github.ref == 'refs/heads/feat/dark-base-theme'
+    if: github.repository == 'xenbW/DARK' && github.ref == 'refs/heads/feat/dark-phase2'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     outputs:
@@ -35,9 +30,8 @@ jobs:
 
       - name: Resolve DARK version
         id: metadata
-        env:
-          DARK_TAG: ${{ inputs.tag || 'v0.1.0-alpha' }}
         run: |
+          DARK_TAG=$(cat .github/dark-alpha-tag.txt)
           python3 .github/scripts/dark_android_release.py metadata \
             --tag "$DARK_TAG" --run-number "$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
           python3 -m unittest discover -s .github/tests -p test_dark_android_release.py
@@ -83,14 +77,13 @@ jobs:
           DARK_VERSION: ${{ steps.metadata.outputs.version }}
           DARK_VERSION_CODE: ${{ steps.metadata.outputs.version_code }}
         run: |
-          ./gradlew :androidApp:assembleDebug :androidApp:ktlintCheck \
+          ./gradlew :androidApp:assembleDebug :androidApp:lintDebug :androidApp:ktlintCheck :shared:ktlintCommonMainSourceSetCheck \
             --no-daemon --no-scan --no-configuration-cache --max-workers=2 \
             "-PappVersion=$DARK_VERSION" "-PdarkVersionCode=$DARK_VERSION_CODE" \
             "-PdarkDebugKeystore=$DARK_DEBUG_KEYSTORE_PATH"
-          ./gradlew :androidApp:testDebugUnitTest \
-            --tests com.metrolist.android.ui.theme.DarkColorSchemeTest \
-            --tests com.metrolist.android.playback.PlaybackServiceStartTest \
-            --no-daemon --no-scan --no-configuration-cache --max-workers=2 \
+          ./gradlew :androidApp:testDebugUnitTest :shared:testAndroidHostTest \
+            --init-script .github/gradle/dark-tests.init.gradle \
+            --no-daemon --no-scan --no-configuration-cache --no-parallel --max-workers=2 \
             "-PappVersion=$DARK_VERSION" "-PdarkVersionCode=$DARK_VERSION_CODE" \
             "-PdarkDebugKeystore=$DARK_DEBUG_KEYSTORE_PATH"
 
@@ -115,24 +108,88 @@ jobs:
         if: always()
         run: rm -f "$RUNNER_TEMP/dark-debug.keystore"
 
-  publish:
+  upgrade-compatibility:
     needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: dark-android
+          path: dist
+      - name: Obtain the original installed alpha
+        run: |
+          curl -fsSL --retry 3 \
+            https://github.com/xenbW/DARK/releases/download/v0.1.0-alpha/DARK-v0.1.0-alpha.apk -o previous.apk
+          echo 'c62e68c9a5fa56d785e68ce07de410415224d5b167af7e1b62b12bbd35e1b562  previous.apk' | sha256sum -c -
+      - name: Enable emulator acceleration
+        run: sudo chmod a+rw /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808 # v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          script: |
+            adb install previous.apk
+            adb shell run-as io.github.xenbw.dark.debug mkdir -p files
+            adb shell run-as io.github.xenbw.dark.debug sh -c '"echo retained > files/dark_upgrade_probe"'
+            adb install -r dist/DARK-*.apk
+            test "$(adb shell run-as io.github.xenbw.dark.debug cat files/dark_upgrade_probe | tr -d '\r')" = retained
+            adb shell dumpsys package io.github.xenbw.dark.debug | grep versionCode
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/dark-release-v')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: write
       actions: read
     steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Find a fully verified build of this commit
+        id: verified
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/dark-android-alpha.yml/runs" \
+            --method GET -f head_sha="$GITHUB_SHA" -f status=success -f per_page=100 \
+            --jq '[.workflow_runs[] | select(.head_branch == "feat/dark-phase2")][0].id // empty')
+          test -n "$run_id" || { echo "No successful phase-2 verification run for this commit" >&2; exit 1; }
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs" \
+            --jq '[.jobs[] | select(.name == "upgrade-compatibility" and .conclusion == "success")] | length')" = 1
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: dark-android
           path: dist
-
+          run-id: ${{ steps.verified.outputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: Validate verified build provenance and checksum
+        run: |
+          DARK_TAG=${GITHUB_REF_NAME#dark-release-}
+          echo "DARK_TAG=$DARK_TAG" >> "$GITHUB_ENV"
+          export DARK_TAG
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          record = json.loads(Path(f"dist/DARK-{os.environ['DARK_TAG']}-build.json").read_text())
+          assert record["commit"] == os.environ["GITHUB_SHA"]
+          assert record["tag"] == os.environ["DARK_TAG"]
+          with open(os.environ["GITHUB_ENV"], "a") as f:
+              f.write(f"SOURCE_RUN_NUMBER={record['run_number']}\n")
+              f.write(f"SOURCE_RUN_URL={record['workflow_run']}\n")
+              f.write(f"DARK_VERSION_CODE={record['version_code']}\n")
+          PY
+          cd dist
+          sha256sum -c "DARK-$DARK_TAG.apk.sha256"
       - name: Publish prerelease APK
         env:
           GH_TOKEN: ${{ github.token }}
-          DARK_TAG: ${{ needs.build.outputs.tag }}
-          DARK_VERSION_CODE: ${{ needs.build.outputs.version_code }}
         run: |
           set -euo pipefail
           cd dist
@@ -151,11 +208,12 @@ jobs:
           cat > ../release-notes.md <<EOF
           DARK $DARK_TAG para Android 7.0 o posterior. APK de pruebas con paquete io.github.xenbw.dark.debug y versionCode $DARK_VERSION_CODE.
 
-          Compilado y firmado por GitHub Actions con el certificado del APK original de DARK. Conserva la licencia GPLv3 y los créditos de Metrolist. La validación incluye compilación, firma, identidad del APK, ktlint y las pruebas focalizadas de paleta y notificación; no sustituye pruebas en dispositivos Samsung.
+          Compilado y firmado por GitHub Actions con el certificado del APK original de DARK. Conserva la licencia GPLv3 y los créditos de Metrolist. La validación incluye compilación, firma, identidad del APK, lint, ktlint, pruebas Android y compartidas, e instalación sobre v0.1.0-alpha en un emulador. No sustituye pruebas visuales en dispositivos Samsung.
 
           Código de esta compilación: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA
           Archivo de fuentes de esta revisión: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.zip
-          Ejecución: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          Compilación y pruebas: $SOURCE_RUN_URL
+          Publicación: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
 
           Los archivos adjuntos incluyen el SHA-256 del APK y los datos de la compilación. Las etiquetas existentes no se mueven; el enlace al commit de esta compilación identifica el código exacto del APK.
           EOF

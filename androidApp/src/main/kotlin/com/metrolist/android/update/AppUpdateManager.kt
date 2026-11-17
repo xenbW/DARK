@@ -16,8 +16,8 @@ import com.metrolist.android.BuildConfig
 import com.metrolist.android.MainActivity
 import com.metrolist.android.R
 import com.metrolist.shared.generated.resources.Res
+import com.metrolist.shared.generated.resources.dark_updates_notification_title
 import com.metrolist.shared.generated.resources.updates_notification_text
-import com.metrolist.shared.generated.resources.updates_notification_title
 import com.metrolist.shared.network.sharedOkHttpClient
 import com.metrolist.shared.settings.Settings
 import com.metrolist.shared.update.ReleaseVersion
@@ -53,16 +53,11 @@ data class GitHubRelease(
         get() = !draft && !prerelease && ReleaseVersion.parse(tagName)?.prerelease?.isEmpty() == true
     val apk: GitHubReleaseAsset?
         get() {
-            val candidates =
-                assets.filter { asset ->
-                    asset.state == "uploaded" &&
-                        asset.name.endsWith(".apk", ignoreCase = true) &&
-                        BLOCKED_APK_MARKERS.none { marker -> asset.name.contains(marker, ignoreCase = true) }
-                }
-            val preferredNames =
-                PREFERRED_APK_NAMES + listOf("metrolist-android-$version.apk", "metrolist-android-$version-universal.apk")
-            return preferredNames.firstNotNullOfOrNull { preferred ->
-                candidates.singleOrNull { it.name.equals(preferred, ignoreCase = true) }
+            if (!isDarkReleaseSource(this)) return null
+            val expectedName = "DARK-$tagName.apk"
+            return assets.singleOrNull { asset ->
+                asset.state == "uploaded" && asset.name == expectedName &&
+                    asset.downloadUrl == "https://github.com/xenbW/DARK/releases/download/$tagName/$expectedName"
             }
         }
 }
@@ -110,7 +105,7 @@ enum class UpdateFailure { CHECK, NO_APK, DOWNLOAD, DIGEST, INSTALL }
 
 object AppUpdateManager {
     const val CHANNEL_ID = "updates"
-    private const val RELEASES_URL = "https://api.github.com/repos/MetrolistGroup/Metrolist/releases?per_page=50"
+    private const val RELEASES_URL = "https://api.github.com/repos/xenbW/DARK/releases?per_page=50"
     private const val NOTIFICATION_ID = 1400
     private const val MAX_APK_BYTES = 512L * 1024 * 1024
     private const val MIN_FREE_SPACE_BYTES = 16L * 1024 * 1024
@@ -120,6 +115,12 @@ object AppUpdateManager {
     private val client =
         sharedOkHttpClient
             .newBuilder()
+            .build()
+    private val releaseClient =
+        client
+            .newBuilder()
+            .followRedirects(false)
+            .followSslRedirects(false)
             .build()
     private val json = Json { ignoreUnknownKeys = true }
     private val mutableState = MutableStateFlow<AppUpdateState>(AppUpdateState.Idle)
@@ -135,14 +136,7 @@ object AppUpdateManager {
         context: Context,
         networkEnabled: Boolean,
     ): GitHubRelease? {
-        if (Settings.shared.updateCacheSource != CACHE_SOURCE) {
-            Settings.shared.updateCacheSource = CACHE_SOURCE
-            Settings.shared.lastUpdateCheckAttemptTimestamp = 0L
-            Settings.shared.lastUpdateCheckTimestamp = 0L
-            Settings.shared.cachedAvailableUpdateJson = ""
-            Settings.shared.cachedUpdateReleasesJson = ""
-            Settings.shared.pendingUpdateReleaseJson = ""
-        }
+        ensureDarkCacheSource()
         val now = System.currentTimeMillis()
         val lastAttempt = Settings.shared.lastUpdateCheckAttemptTimestamp
         val checkIsDue = lastAttempt !in 1..now || now - lastAttempt >= CHECK_INTERVAL_MILLIS
@@ -151,6 +145,7 @@ object AppUpdateManager {
         }
 
         val cached = withContext(Dispatchers.IO) { cachedAvailableRelease() }
+        if (cached == null) context.getSystemService(NotificationManager::class.java)?.cancel(NOTIFICATION_ID)
         mutableState.value =
             if (cached == null) {
                 AppUpdateState.UpToDate(Settings.shared.lastUpdateCheckTimestamp)
@@ -160,9 +155,22 @@ object AppUpdateManager {
         return cached
     }
 
+    private fun ensureDarkCacheSource() {
+        if (Settings.shared.updateCacheSource != CACHE_SOURCE) {
+            Settings.shared.updateCacheSource = CACHE_SOURCE
+            Settings.shared.lastUpdateCheckAttemptTimestamp = 0L
+            Settings.shared.lastUpdateCheckTimestamp = 0L
+            Settings.shared.cachedAvailableUpdateJson = ""
+            Settings.shared.cachedUpdateReleasesJson = ""
+            Settings.shared.pendingUpdateReleaseJson = ""
+            Settings.shared.lastNotifiedUpdateVersion = ""
+        }
+    }
+
     suspend fun loadReleaseHistory() =
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
+                ensureDarkCacheSource()
                 if (mutableReleases.value.isEmpty()) mutableReleases.value = cachedReleases()
             }
         }
@@ -174,6 +182,7 @@ object AppUpdateManager {
     ): GitHubRelease? =
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
+                ensureDarkCacheSource()
                 when (val active = mutableState.value) {
                     is AppUpdateState.Downloading -> {
                         return@withLock active.release
@@ -196,15 +205,17 @@ object AppUpdateManager {
                             .url(RELEASES_URL)
                             .header("Accept", "application/vnd.github+json")
                             .header("X-GitHub-Api-Version", "2022-11-28")
-                            .header("User-Agent", "Metrolist/${BuildConfig.VERSION_NAME}")
+                            .header("User-Agent", "DARK/${BuildConfig.VERSION_NAME}")
                             .build()
                     val publicReleases =
-                        client.newCall(request).execute().use { response ->
+                        releaseClient.newCall(request).execute().use { response ->
                             check(response.isSuccessful) { "GitHub returned ${response.code}" }
                             json
                                 .decodeFromString<List<GitHubRelease>>(checkNotNull(response.body).string())
-                                .filter { release -> !release.draft && ReleaseVersion.parse(release.tagName) != null }
-                                .sortedWith { left, right -> compareVersions(right.version, left.version) }
+                                .filter { release ->
+                                    isDarkReleaseSource(release) && !release.draft && release.apk != null &&
+                                        ReleaseVersion.parse(release.tagName) != null
+                                }.sortedWith { left, right -> compareVersions(right.version, left.version) }
                         }
                     mutableReleases.value = publicReleases
                     if (!crashRecovery) Settings.shared.cachedUpdateReleasesJson = json.encodeToString(publicReleases)
@@ -212,11 +223,12 @@ object AppUpdateManager {
                     if (!crashRecovery) Settings.shared.lastUpdateCheckTimestamp = now
                     val update =
                         publicReleases.firstOrNull { release ->
-                            (crashRecovery || release.isPublishedStable) &&
+                            (crashRecovery || acceptsDarkReleaseChannel(release, currentVersion)) &&
                                 compareVersions(release.version, currentVersion) > 0
                         }
                     if (!crashRecovery) Settings.shared.cachedAvailableUpdateJson = update?.let { json.encodeToString(it) }.orEmpty()
                     mutableState.value = if (update == null) AppUpdateState.UpToDate(now) else AppUpdateState.Available(update)
+                    if (update == null) context.getSystemService(NotificationManager::class.java)?.cancel(NOTIFICATION_ID)
                     if (update != null && notify && !crashRecovery) notifyAvailable(context, update)
                     update
                 }.getOrElse {
@@ -248,13 +260,13 @@ object AppUpdateManager {
                 check(asset.size in 1..MAX_APK_BYTES) { "Invalid update size" }
                 val updateDir = File(context.cacheDir, "updates").apply { mkdirs() }
                 updateDir.listFiles()?.forEach(File::delete)
-                val partial = File(updateDir, "Metrolist-${release.version}.apk.part")
-                val output = File(updateDir, "Metrolist-${release.version}.apk")
+                val partial = File(updateDir, "DARK-${release.version}.apk.part")
+                val output = File(updateDir, "DARK-${release.version}.apk")
                 val request =
                     Request
                         .Builder()
                         .url(asset.downloadUrl)
-                        .header("User-Agent", "Metrolist/${BuildConfig.VERSION_NAME}")
+                        .header("User-Agent", "DARK/${BuildConfig.VERSION_NAME}")
                         .build()
                 var downloaded = 0L
                 val call = client.newCall(request).also { activeDownload = it }
@@ -381,7 +393,7 @@ object AppUpdateManager {
     fun pendingReleaseForInstalledVersion(): GitHubRelease? =
         runCatching { json.decodeFromString<GitHubRelease>(Settings.shared.pendingUpdateReleaseJson) }
             .getOrNull()
-            ?.takeIf { it.version == BuildConfig.VERSION_NAME.removePrefix("v") }
+            ?.takeIf { isDarkReleaseSource(it) && it.version == BuildConfig.VERSION_NAME.removePrefix("v") }
 
     fun clearPendingRelease() {
         Settings.shared.pendingUpdateReleaseJson = ""
@@ -390,11 +402,15 @@ object AppUpdateManager {
     private fun cachedAvailableRelease(): GitHubRelease? =
         runCatching { json.decodeFromString<GitHubRelease>(Settings.shared.cachedAvailableUpdateJson) }
             .getOrNull()
-            ?.takeIf { it.isPublishedStable && compareVersions(it.version, currentVersion) > 0 }
+            ?.takeIf {
+                isDarkReleaseSource(it) && it.apk != null && acceptsDarkReleaseChannel(it, currentVersion) &&
+                    compareVersions(it.version, currentVersion) > 0
+            }
 
     private fun cachedReleases(): List<GitHubRelease> =
         runCatching { json.decodeFromString<List<GitHubRelease>>(Settings.shared.cachedUpdateReleasesJson) }
             .getOrDefault(emptyList())
+            .filter { isDarkReleaseSource(it) && !it.draft && it.apk != null }
 
     fun releaseForInstalledVersion(): GitHubRelease? =
         mutableReleases.value.firstOrNull { it.version == BuildConfig.VERSION_NAME.removePrefix("v") }
@@ -426,7 +442,7 @@ object AppUpdateManager {
             NotificationCompat
                 .Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle(getString(Res.string.updates_notification_title, release.version))
+                .setContentTitle(getString(Res.string.dark_updates_notification_title, release.version))
                 .setContentText(getString(Res.string.updates_notification_text))
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
@@ -518,12 +534,4 @@ object AppUpdateManager {
 }
 
 private const val CHECK_INTERVAL_MILLIS = 60 * 60 * 1_000L
-private const val CACHE_SOURCE = "github-releases-metrolist-v1"
-private val PREFERRED_APK_NAMES =
-    listOf(
-        "Metrolist.apk",
-        "Metrolist-Android-release.apk",
-        "androidApp-release.apk",
-        "nightly-Metrolist-Android-release.apk",
-    )
-private val BLOCKED_APK_MARKERS = listOf("debug", "unsigned", "unaligned", "test", "benchmark")
+internal const val CACHE_SOURCE = "github-releases-dark-v2"

@@ -28,40 +28,51 @@ class AppUpdatePrereleaseRegressionTest {
     }
 
     @Test
-    fun automaticUpdateIgnoresGitHubPrerelease() =
+    fun validDarkAlphaCanBeOfferedFromCache() =
         runTest {
-            assertNull(checkCachedRelease("v999.0.0-rc.1", prerelease = true))
+            Settings.shared.cachedAvailableUpdateJson =
+                """
+                {
+                  "tag_name":"v999.0.0-alpha",
+                  "prerelease":true,
+                  "html_url":"https://github.com/xenbW/DARK/releases/tag/v999.0.0-alpha",
+                  "assets":[{
+                    "name":"DARK-v999.0.0-alpha.apk", "state":"uploaded", "size":100,
+                    "browser_download_url":"https://github.com/xenbW/DARK/releases/download/v999.0.0-alpha/DARK-v999.0.0-alpha.apk"
+                  }]
+                }
+                """.trimIndent()
+            assertEquals(
+                "999.0.0-alpha",
+                AppUpdateManager.checkAtStartup(RuntimeEnvironment.getApplication(), networkEnabled = false)?.version,
+            )
         }
 
     @Test
-    fun automaticUpdateIgnoresPrereleaseTagMisclassifiedAsStable() =
+    fun oldMetrolistCachesAreClearedEvenWithoutNetwork() =
         runTest {
-            assertNull(checkCachedRelease("v999.0.0-rc.1", prerelease = false))
+            Settings.shared.updateCacheSource = "github-releases-metrolist-v1"
+            Settings.shared.cachedAvailableUpdateJson =
+                """{"tag_name":"v999.0.0","html_url":"https://github.com/MetrolistGroup/Metrolist/releases/tag/v999.0.0"}"""
+            assertNull(AppUpdateManager.checkAtStartup(RuntimeEnvironment.getApplication(), networkEnabled = false))
+            assertEquals(CACHE_SOURCE, Settings.shared.updateCacheSource)
+            assertEquals("", Settings.shared.cachedAvailableUpdateJson)
         }
 
     @Test
-    fun automaticUpdateIgnoresStableTagMarkedAsPrerelease() =
+    fun foreignReleaseIsNeverOfferedFromTheDarkCache() =
         runTest {
-            assertNull(checkCachedRelease("v999.0.0", prerelease = true))
+            Settings.shared.cachedAvailableUpdateJson =
+                """{"tag_name":"v999.0.0","html_url":"https://github.com/MetrolistGroup/Metrolist/releases/tag/v999.0.0"}"""
+            assertNull(AppUpdateManager.checkAtStartup(RuntimeEnvironment.getApplication(), networkEnabled = false))
         }
 
     @Test
-    fun automaticUpdateStillAcceptsPublishedStableRelease() =
+    fun releaseHistoryRejectsForeignAndIncompleteReleases() =
         runTest {
-            assertEquals("999.0.0", checkCachedRelease("v999.0.0", prerelease = false)?.version)
+            Settings.shared.cachedUpdateReleasesJson =
+                """[{"tag_name":"v999.0.0","html_url":"https://github.com/MetrolistGroup/Metrolist/releases/tag/v999.0.0"}]"""
+            AppUpdateManager.loadReleaseHistory()
+            assertEquals(emptyList<GitHubRelease>(), AppUpdateManager.releases.value)
         }
-
-    private suspend fun checkCachedRelease(
-        tag: String,
-        prerelease: Boolean,
-    ): GitHubRelease? {
-        Settings.shared.cachedAvailableUpdateJson =
-            """{"tag_name":"$tag","name":"Candidate","draft":false,"prerelease":$prerelease,""" +
-            """"html_url":"https://example.invalid/$tag","assets":[]}"""
-        return AppUpdateManager.checkAtStartup(RuntimeEnvironment.getApplication(), networkEnabled = false)
-    }
-
-    private companion object {
-        const val CACHE_SOURCE = "github-releases-metrolist-v1"
-    }
 }

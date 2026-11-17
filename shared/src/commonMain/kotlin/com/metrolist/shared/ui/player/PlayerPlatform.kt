@@ -22,6 +22,8 @@ data class PlayerArtworkCrossfade(
 
 @Stable
 interface PlayerPlatform {
+    val useDarkDesign: Boolean get() = false
+
     val supportsPictureInPicture: Boolean
     val supportsVideoPlayback: Boolean
     val supportsCasting: Boolean
