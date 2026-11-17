@@ -89,7 +89,7 @@ jobs:
         run: |
           ./gradlew :androidApp:testDebugUnitTest :shared:testAndroidHostTest \
             --init-script .github/gradle/dark-tests.init.gradle \
-            --no-daemon --no-scan --no-configuration-cache --no-parallel --max-workers=2 \
+            --no-daemon --no-scan --no-configuration-cache --no-parallel --continue --max-workers=2 \
             "-PappVersion=$DARK_VERSION" "-PdarkVersionCode=$DARK_VERSION_CODE" \
             "-PdarkDebugKeystore=$DARK_DEBUG_KEYSTORE_PATH"
 

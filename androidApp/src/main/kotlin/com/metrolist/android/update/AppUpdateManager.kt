@@ -185,7 +185,7 @@ object AppUpdateManager {
     ): GitHubRelease? =
         withContext(Dispatchers.IO) {
             operationMutex.withLock {
-                ensureDarkCacheSource()
+                if (!crashRecovery) ensureDarkCacheSource()
                 when (val active = mutableState.value) {
                     is AppUpdateState.Downloading -> {
                         return@withLock active.release
