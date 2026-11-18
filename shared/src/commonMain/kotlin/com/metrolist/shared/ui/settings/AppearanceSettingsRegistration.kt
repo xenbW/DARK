@@ -495,8 +495,24 @@ internal fun SettingsUiRegistryBuilder.registerAppearanceSettings(host: SharedSe
                 ) { settings.swipeThumbnail = it }
                 switch(
                     id = "swipeToSong",
-                    title = stringResource(Res.string.appearance_swipe_song_gesture),
-                    description = stringResource(Res.string.appearance_swipe_song_gesture_description),
+                    title =
+                        stringResource(
+                            if (host.platform ==
+                                SettingsPlatform.ANDROID
+                            ) {
+                                Res.string.dark_swipe_left_queue
+                            } else {
+                                Res.string.appearance_swipe_song_gesture
+                            },
+                        ),
+                    description =
+                        stringResource(
+                            if (host.platform == SettingsPlatform.ANDROID) {
+                                Res.string.dark_swipe_left_queue_description
+                            } else {
+                                Res.string.appearance_swipe_song_gesture_description
+                            },
+                        ),
                     checked = settings.swipeToSong,
                 ) { settings.swipeToSong = it }
                 if (host.platform == SettingsPlatform.ANDROID) {

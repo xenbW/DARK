@@ -5509,4 +5509,6 @@
     <string name="dark_updates_release_notes_title">What\u0027s new in DARK %1$s</string>
     <string name="dark_crash_updates_no_updates" translatable="false">DARK is up to date</string>
     <string name="dark_crash_updates_version" translatable="false">DARK version</string>
+    <string name="dark_swipe_left_queue">Swipe left to add to queue</string>
+    <string name="dark_swipe_left_queue_description">Optional left swipe to add a song to the end of the queue. Right swipe always adds it to Play next.</string>
 </resources>
