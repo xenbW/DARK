@@ -834,7 +834,7 @@ fun AutoPlaylistScreen(
                         SwipeGestureHandler(
                             onSwipeLeft = { playerConnection?.addToQueue(song) },
                             onSwipeRight = { playerConnection?.addToQueue(song, playNext = true) },
-                            enabled = playerConnection != null && Settings.shared.swipeToSong && !reordering && !selection.active,
+                            enabled = playerConnection != null && !reordering && !selection.active,
                             content = content,
                         )
                     },

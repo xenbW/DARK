@@ -197,7 +197,7 @@ fun SearchScreen(
             SwipeGestureHandler(
                 onSwipeLeft = { playerConnection?.addToQueue(item) },
                 onSwipeRight = { playerConnection?.addToQueue(item, playNext = true) },
-                enabled = playerConnection != null && Settings.shared.swipeToSong,
+                enabled = playerConnection != null,
                 content = content,
             )
         } else {

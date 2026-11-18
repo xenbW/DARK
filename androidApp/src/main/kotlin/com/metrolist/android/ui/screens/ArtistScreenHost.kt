@@ -192,7 +192,7 @@ fun ArtistScreenHost(
             SwipeGestureHandler(
                 onSwipeLeft = { playerConnection?.addToQueue(song) },
                 onSwipeRight = { playerConnection?.addToQueue(song, playNext = true) },
-                enabled = playerConnection != null && Settings.shared.swipeToSong,
+                enabled = playerConnection != null,
                 content = content,
             )
         },

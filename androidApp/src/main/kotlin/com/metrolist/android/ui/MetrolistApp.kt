@@ -316,6 +316,7 @@ import com.metrolist.shared.ui.components.LocalDownloadedSongIds
 import com.metrolist.shared.ui.components.PopupContent
 import com.metrolist.shared.ui.components.PopupVisibility
 import com.metrolist.shared.ui.components.images.AsyncImage
+import com.metrolist.shared.ui.components.lyrics.LocalDarkLyricsColors
 import com.metrolist.shared.ui.components.lyrics.LyricsTranslationSnackbar
 import com.metrolist.shared.ui.components.rememberBottomSheetState
 import com.metrolist.shared.ui.design.expressive.components.ExpressiveMiniPlayerHeight
@@ -886,6 +887,7 @@ fun MetrolistApp(
             LocalPlayerConnection provides playerConnection,
             LocalPlayerSession provides playerConnection,
             LocalPlayerPlatform provides playerPlatform,
+            LocalDarkLyricsColors provides true,
             LocalListenTogetherManager provides listenTogetherManager,
             LocalIsTv provides isAndroidTv,
             LocalMenuState provides menuState,

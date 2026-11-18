@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -41,13 +40,25 @@ internal fun DarkPlayerControls(
     focusRequester: FocusRequester?,
     modifier: Modifier = Modifier,
 ) {
+    val skipColors =
+        IconButtonDefaults.filledIconButtonColors(
+            containerColor = Color(0xFF181818),
+            contentColor = Color.White,
+            disabledContainerColor = Color(0xFF181818),
+            disabledContentColor = Color(0xFF808080),
+        )
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Row(
             modifier = Modifier.widthIn(max = 360.dp).fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = { onPrevious?.invoke() }, enabled = onPrevious != null, modifier = Modifier.size(48.dp)) {
+            FilledIconButton(
+                onClick = { onPrevious?.invoke() },
+                enabled = onPrevious != null,
+                colors = skipColors,
+                modifier = Modifier.size(48.dp),
+            ) {
                 Icon(MetrolistIcons.Rounded.SkipPrevious, previousText, modifier = Modifier.size(28.dp))
             }
             FilledIconButton(
@@ -69,7 +80,12 @@ internal fun DarkPlayerControls(
                     )
                 }
             }
-            IconButton(onClick = { onNext?.invoke() }, enabled = onNext != null, modifier = Modifier.size(48.dp)) {
+            FilledIconButton(
+                onClick = { onNext?.invoke() },
+                enabled = onNext != null,
+                colors = skipColors,
+                modifier = Modifier.size(48.dp),
+            ) {
                 Icon(MetrolistIcons.Rounded.SkipNext, nextText, modifier = Modifier.size(28.dp))
             }
         }

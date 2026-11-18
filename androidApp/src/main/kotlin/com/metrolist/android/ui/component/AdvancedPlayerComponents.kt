@@ -13,7 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import com.metrolist.android.listentogether.AndroidListenTogetherManager
+import com.metrolist.shared.generated.resources.Res
+import com.metrolist.shared.generated.resources.queued
+import com.metrolist.shared.settings.Settings
 import com.metrolist.shared.ui.theme.ComponentShapes
+import org.jetbrains.compose.resources.stringResource
 import com.metrolist.shared.ui.components.SwipeGestureHandler as SharedSwipeGestureHandler
 
 @Composable
@@ -39,6 +43,9 @@ fun SwipeGestureHandler(
         enabled = enabled && !isGuest,
         removeOnSwipeLeft = removeOnSwipeLeft,
         enableSwipeRight = enableSwipeRight,
+        enableSwipeLeft = removeOnSwipeLeft || Settings.shared.swipeToSong,
+        physicalDirections = true,
+        rightFeedback = stringResource(Res.string.queued),
         shape = shape,
         content = content,
     )

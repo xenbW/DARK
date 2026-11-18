@@ -788,9 +788,8 @@ fun PlaylistScreen(
                             },
                             onSwipeRight = { playerConnection?.addToQueue(song, playNext = true) },
                             enabled =
-                                playerConnection != null && !reorderMode && !selection.active && (canRemove || Settings.shared.swipeToSong),
+                                playerConnection != null && !reorderMode && !selection.active,
                             removeOnSwipeLeft = canRemove,
-                            enableSwipeRight = Settings.shared.swipeToSong,
                             content = content,
                         )
                     },

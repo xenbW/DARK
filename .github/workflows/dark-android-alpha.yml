@@ -2,7 +2,7 @@ name: DARK Android alpha
 
 on:
   push:
-    branches: [feat/dark-phase2]
+    branches: [fix/dark-player-song-swipes]
     tags: ['dark-release-v*']
   workflow_dispatch:
 
@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    if: github.repository == 'xenbW/DARK' && github.ref == 'refs/heads/feat/dark-phase2'
+    if: github.repository == 'xenbW/DARK' && github.ref == 'refs/heads/fix/dark-player-song-swipes'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     outputs:
@@ -134,11 +134,11 @@ jobs:
         with:
           name: dark-android
           path: dist
-      - name: Obtain the original installed alpha
+      - name: Obtain the previously installed alpha
         run: |
           curl -fsSL --retry 3 \
-            https://github.com/xenbW/DARK/releases/download/v0.1.0-alpha/DARK-v0.1.0-alpha.apk -o previous.apk
-          echo 'c62e68c9a5fa56d785e68ce07de410415224d5b167af7e1b62b12bbd35e1b562  previous.apk' | sha256sum -c -
+            https://github.com/xenbW/DARK/releases/download/v0.2.0-alpha/DARK-v0.2.0-alpha.apk -o previous.apk
+          echo '08493fa22b1c051bdeea0ad11bd9094c7aeea44dfba2a6f1f677c1530c6ebb37  previous.apk' | sha256sum -c -
       - name: Enable emulator acceleration
         run: sudo chmod a+rw /dev/kvm
       - uses: reactivecircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808 # v2
@@ -175,8 +175,8 @@ jobs:
           set -euo pipefail
           run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/dark-android-alpha.yml/runs" \
             --method GET -f head_sha="$GITHUB_SHA" -f status=success -f per_page=100 \
-            --jq '[.workflow_runs[] | select(.head_branch == "feat/dark-phase2")][0].id // empty')
-          test -n "$run_id" || { echo "No successful phase-2 verification run for this commit" >&2; exit 1; }
+            --jq '[.workflow_runs[] | select(.head_branch == "fix/dark-player-song-swipes")][0].id // empty')
+          test -n "$run_id" || { echo "No successful DARK verification run for this commit" >&2; exit 1; }
           test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs" \
             --jq '[.jobs[] | select(.name == "upgrade-compatibility" and .conclusion == "success")] | length')" = 1
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
@@ -225,7 +225,7 @@ jobs:
           cat > ../release-notes.md <<EOF
           DARK $DARK_TAG para Android 7.0 o posterior. APK de pruebas con paquete io.github.xenbw.dark.debug y versionCode $DARK_VERSION_CODE.
 
-          Compilado y firmado por GitHub Actions con el certificado del APK original de DARK. Conserva la licencia GPLv3 y los créditos de Metrolist. La validación incluye compilación, firma, identidad del APK, lint, ktlint, pruebas Android y compartidas, e instalación sobre v0.1.0-alpha en un emulador. No sustituye pruebas visuales en dispositivos Samsung.
+          Compilado y firmado por GitHub Actions con el certificado del APK original de DARK. Conserva la licencia GPLv3 y los créditos de Metrolist. La validación incluye compilación, firma, identidad del APK, lint, ktlint, pruebas Android y compartidas, e instalación sobre v0.2.0-alpha en un emulador. No sustituye pruebas visuales en dispositivos Samsung.
 
           Código de esta compilación: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA
           Archivo de fuentes de esta revisión: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.zip

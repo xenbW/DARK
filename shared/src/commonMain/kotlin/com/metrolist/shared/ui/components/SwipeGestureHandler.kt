@@ -15,6 +15,8 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.metrolist.shared.generated.resources.Res
 import com.metrolist.shared.generated.resources.add_to_queue
@@ -40,6 +42,9 @@ fun SwipeGestureHandler(
     enabled: Boolean = true,
     removeOnSwipeLeft: Boolean = false,
     enableSwipeRight: Boolean = true,
+    enableSwipeLeft: Boolean = true,
+    physicalDirections: Boolean = false,
+    rightFeedback: String? = null,
     shape: Shape = ComponentShapes.CardShape,
     content: @Composable () -> Unit,
 ) {
@@ -76,10 +81,11 @@ fun SwipeGestureHandler(
 
     val startBackground = MaterialTheme.colorScheme.primaryContainer
     val endBackground = MaterialTheme.colorScheme.secondaryContainer
+    val playNextFeedback = rightFeedback ?: playNext
     val startAction =
-        remember(playNext, startBackground, haptics) {
+        remember(playNext, playNextFeedback, startBackground, haptics) {
             SwipeAction(
-                onSwipe = { commit(currentOnSwipeRight, playNext) },
+                onSwipe = { commit(currentOnSwipeRight, playNextFeedback) },
                 icon = {
                     Icon(
                         MetrolistIcons.AutoMirrored.Filled.PlaylistPlay,
@@ -107,13 +113,16 @@ fun SwipeGestureHandler(
             )
         }
 
+    val rightActions = if (enableSwipeRight) listOf(startAction) else emptyList()
+    val leftActions = if (enableSwipeLeft) listOf(endAction) else emptyList()
+    val swapActions = physicalDirections && LocalLayoutDirection.current == LayoutDirection.Rtl
     CompositionLocalProvider(LocalHapticFeedback provides thresholdHaptics) {
         SwipeableActionsBox(
             modifier = modifier.clip(shape),
             swipeThreshold = 64.dp,
             backgroundUntilSwipeThreshold = MaterialTheme.colorScheme.surfaceContainerHigh,
-            startActions = if (enableSwipeRight) listOf(startAction) else emptyList(),
-            endActions = listOf(endAction),
+            startActions = if (swapActions) leftActions else rightActions,
+            endActions = if (swapActions) rightActions else leftActions,
         ) {
             CompositionLocalProvider(LocalHapticFeedback provides inheritedFeedback) { content() }
         }

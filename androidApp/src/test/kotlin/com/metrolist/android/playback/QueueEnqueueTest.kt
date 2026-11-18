@@ -11,6 +11,17 @@ class QueueEnqueueTest {
     private fun song(id: String) = SongItem(id, id, null, emptyList(), null)
 
     @Test
+    fun successiveSingleSongPlayNextActionsKeepTheCurrentTrackAndHistory() {
+        val queue = MusicQueue().apply { setQueue(listOf(song("past"), song("current"), song("later")), 1) }
+        val current = queue.currentSong()
+        enqueueSongs(queue, listOf(song("first")), playNext = true, preventDuplicates = false)
+        enqueueSongs(queue, listOf(song("second")), playNext = true, preventDuplicates = false)
+        assertEquals(current, queue.currentSong())
+        assertEquals(1, queue.currentIndex.value)
+        assertEquals(listOf("past", "current", "second", "first", "later"), queue.items.value.map { it.id })
+    }
+
+    @Test
     fun batchesKeepOrderBeforeRecommendationsAndRespectCurrentDuplicate() {
         val queue = MusicQueue()
         queue.setQueue(listOf(song("current"), song("suggested").copy(queueSourceTitle = QUEUE_SOURCE_RECOMMENDED)))

@@ -545,7 +545,8 @@ fun LibraryScreen(
                         SwipeGestureHandler(
                             onSwipeLeft = { queue(item, playNext = false) },
                             onSwipeRight = { queue(item, playNext = true) },
-                            enabled = playerConnection != null && Settings.shared.swipeToSong && searchQuery.isNotBlank(),
+                            enabled =
+                                playerConnection != null && (item is SongItem || (Settings.shared.swipeToSong && searchQuery.isNotBlank())),
                             shape = if (isGridView) gridCellShape() else RoundedCornerShape(ThumbnailCornerRadius),
                             content = content,
                         )

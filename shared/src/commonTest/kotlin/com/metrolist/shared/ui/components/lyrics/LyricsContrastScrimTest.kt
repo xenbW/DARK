@@ -1,5 +1,6 @@
 package com.metrolist.shared.ui.components.lyrics
 
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.compositeOver
@@ -88,6 +89,29 @@ class LyricsContrastScrimTest {
         val text = Color(0xFFFFDCC0)
         val alpha = lyricsContrastScrimAlpha(text, listOf(background))
         assertTrue(contrast(text, Color.Black.copy(alpha = alpha).compositeOver(background)) >= 4.5f)
+    }
+
+    @Test
+    fun darkActiveLineStaysReadableWhenArtworkRequestsDarkText() {
+        val scheme = darkColorScheme()
+        for (incoming in listOf(Color.Black, Color(0xFF333333), Color.White)) {
+            for (neutral in listOf(false, true)) {
+                val active = lyricsTextColorForPlayer(incoming, neutral, darkDesign = true, scheme)
+                assertTrue(contrast(active, Color.Black) >= 4.5f)
+                assertEquals(Color.White, active)
+            }
+        }
+    }
+
+    @Test
+    fun darkActiveLineKeepsContrastAgainstBrightArtwork() {
+        val active = lyricsTextColorForPlayer(Color.Black, neutralColor = false, darkDesign = true, darkColorScheme())
+        for (background in listOf(Color.White, Color.Yellow, Color.Cyan)) {
+            val alpha = lyricsContrastScrimAlpha(active, listOf(background))
+            val treated = Color.Black.copy(alpha = alpha).compositeOver(background)
+            assertTrue(contrast(active, treated) >= 4.5f)
+        }
+        assertEquals(0f, lyricsContrastScrimAlpha(active, listOf(Color.Black)))
     }
 
     private fun contrast(

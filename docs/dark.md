@@ -10,6 +10,12 @@ Android uses a fixed black background, white primary text and neutral gray secon
 
 The default launcher icon is an independent monochrome D, including Android themed icons. GPL notices and original contributor credits are retained. Shared application names for desktop and iOS remain Metrolist. The Android name uses the non-translatable `dark_app_name` entry in the shared resource catalog.
 
+## Android corrections in v0.2.1-alpha
+
+The full player explicitly sets white skip icons on discreet gray surfaces, with visible gray disabled controls. DARK uses white active lyrics text regardless of the artwork hint or accent preference, retaining the existing contrast scrim, timing, word highlighting and scroll logic.
+
+A physical swipe to the right on a song queues it with the existing Play next operation. This is available in Android search, library, albums and playlists without enabling the legacy swipe preference. The existing horizontal touch-slop detector and 64 dp commit threshold are retained; vertical drags remain available to the scrolling list. RTL layouts use the same physical direction. The action reveals the Play next icon, provides haptic feedback and shows the localized Queued confirmation. Selection, playlist reordering and guest playback restrictions still disable the gesture. Left swipes retain their existing preferences and playlist-removal behavior.
+
 ## Build
 
 Follow [development.md](development.md) for Temurin 25, Android SDK 37.1 and native toolchains. Run:
@@ -25,18 +31,18 @@ Use the [Android checks](checks.md#platform-checks) and verify startup, navigati
 
 ## GitHub Actions distribution
 
-`.github/workflows/dark-android-alpha.yml` builds and tests pushes to `feat/dark-phase2`. `.github/dark-alpha-tag.txt` selects the next prerelease version. These pushes do not publish a release. The workflow uses GitHub-hosted Ubuntu runners, Temurin 25 and pinned Android toolchains; it does not merge or push to `main`.
+`.github/workflows/dark-android-alpha.yml` builds and tests pushes to `fix/dark-player-song-swipes`. `.github/dark-alpha-tag.txt` selects the next prerelease version. These pushes do not publish a release. The workflow uses GitHub-hosted Ubuntu runners, Temurin 25 and pinned Android toolchains; it does not merge or push to `main`.
 
-The build runs `assembleDebug`, Android lint, Android/common-source ktlint, all Android unit tests and shared Android host tests. It verifies the signing certificate, APK package, label and version. A separate API 35 emulator job downloads the original v0.1.0-alpha APK, checks its pinned SHA-256, installs it, writes a private data probe and installs the new APK with `adb install -r`. It then verifies that the data survived. This checks Android's signature/version compatibility and data retention; it does not establish visual behavior or Samsung-specific integration.
+The build runs `assembleDebug`, Android lint, Android/common-source ktlint, all Android unit tests and shared Android host tests. It verifies the signing certificate, APK package, label and version. A separate API 35 emulator job downloads the previously distributed v0.2.0-alpha APK, checks its pinned SHA-256, installs it, writes a private data probe and installs the new APK with `adb install -r`. It then verifies that the data survived. This checks Android's signature/version compatibility and data retention; it does not establish visual behavior or Samsung-specific integration.
 
 After reviewing a successful run, publish its exact tested commit without rebuilding:
 
 ```sh
-git tag dark-release-v0.2.0-alpha <tested-commit>
-git push origin dark-release-v0.2.0-alpha
+git tag dark-release-v0.2.1-alpha <tested-commit>
+git push origin dark-release-v0.2.1-alpha
 ```
 
-The internal `dark-release-` tag triggers publication to the `v0.2.0-alpha` prerelease. The publication job uses `contents: write` and `actions: read`, finds a successful phase-2 build at that exact commit, requires a successful emulator upgrade job, and downloads that run's immutable artifact. It checks the artifact's source/version metadata and SHA-256 before uploading. It keeps the release in draft until a download of the uploaded APK matches the tested file. Attachments include the APK, SHA-256 and build JSON. Artifacts remain available for 30 days; if they expire, run a new verified build before publishing.
+The internal `dark-release-` tag triggers publication to the `v0.2.1-alpha` prerelease. The publication job uses `contents: write` and `actions: read`, finds a successful DARK build at that exact commit, requires a successful emulator upgrade job, and downloads that run's immutable artifact. It checks the artifact's source/version metadata and SHA-256 before uploading. It keeps the release in draft until a download of the uploaded APK matches the tested file. Attachments include the APK, SHA-256 and build JSON. Artifacts remain available for 30 days; if they expire, run a new verified build before publishing.
 
 While the workflow exists only on a development branch, GitHub may not offer its manual dispatch button. Branch pushes and rerunning an existing run remain available. Never publish a release from a failed or unfinished verification run.
 
@@ -54,7 +60,7 @@ The workflow restores the keystore under `RUNNER_TEMP` and passes its explicit p
 
 ### Future updates and versions
 
-For another prerelease, update `.github/dark-alpha-tag.txt`, push and wait for every verification job to pass before pushing the matching internal publication tag. Internal `versionName` comes from the file and `versionCode` is `154 + github.run_number`, exceeding the installed v0.1.0-alpha code of 156 from subsequent runs. Keep the workflow filename and its run-number sequence stable. Reruns retain their versionCode. Publishing reuses the verified build's code, not the publication run number.
+For another prerelease, update `.github/dark-alpha-tag.txt`, push and wait for every verification job to pass before pushing the matching internal publication tag. Internal `versionName` comes from the file and `versionCode` is `154 + github.run_number`, exceeding the installed v0.2.0-alpha code of 161 from subsequent runs. Keep the workflow filename and its run-number sequence stable. Reruns retain their versionCode. Publishing reuses the verified build's code, not the publication run number.
 
 Gradle accepts `-PdarkVersionCode` for CI without changing the normal local value 154. The workflow also passes `-PappVersion`, leaving the shared version property untouched. Existing release tags are not moved: release notes and the build JSON link to the actual source commit and Actions run. The previous pre-release tag can therefore still identify the first phase's original commit; the notes identify the revision compiled by Actions.
 

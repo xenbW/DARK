@@ -78,7 +78,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -215,11 +214,12 @@ internal suspend fun animateLyricsItemAppearance(
 
 @Composable
 internal fun resolveLyricsTextColor(textColor: Color): Color =
-    if (Settings.shared.lyricsNeutralColor) {
-        if (textColor.luminance() > 0.5f) Color.White else Color.Black
-    } else {
-        lyricsPaletteTextColor(MaterialTheme.colorScheme, textColor.luminance() > 0.5f)
-    }
+    lyricsTextColorForPlayer(
+        textColor = textColor,
+        neutralColor = Settings.shared.lyricsNeutralColor,
+        darkDesign = LocalDarkLyricsColors.current,
+        scheme = MaterialTheme.colorScheme,
+    )
 
 @Composable
 fun LyricsView(
